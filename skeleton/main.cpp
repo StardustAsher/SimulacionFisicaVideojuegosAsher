@@ -3,6 +3,7 @@
 #include <PxPhysicsAPI.h>
 
 #include <vector>
+#include "Vector3D.h"
 
 #include "core.hpp"
 #include "RenderUtils.hpp"
@@ -54,6 +55,31 @@ void initPhysics(bool interactive)
 	sceneDesc.filterShader = contactReportFilterShader;
 	sceneDesc.simulationEventCallback = &gContactReportCallback;
 	gScene = gPhysics->createScene(sceneDesc);
+
+	//Esfera
+	PxShape* sphereShape = gPhysics->createShape(PxSphereGeometry(2.0f), *gMaterial);
+	PxTransform* sphereTransform = new PxTransform(PxVec3(0.0f, 0.0f, 0.0f));
+	Vector3 color = Vector3(0.0f, 0.0f, 0.0f); 
+	
+	RenderItem* sphereRenderItem = new RenderItem(sphereShape, sphereTransform, Vector4(color.x, color.y, color.z, 1.0f));
+
+	RegisterRenderItem(sphereRenderItem);
+
+	//EsferasVector
+
+	Vector3D posicionEsfera1 = Vector3D(10.0f, 0.0f, 0.0f);
+	Vector3D posicionEsfera2 = Vector3D(0.0f, 10.0f, 0.0f);
+	Vector3D posicionEsfera3 = Vector3D(0.0f, 0.0f, 10.0f);
+
+	RenderItem* esfera1 = new RenderItem(sphereShape, new PxTransform(PxVec3(posicionEsfera1.x, posicionEsfera1.y, posicionEsfera1.z)), Vector4(1.0f, 0.0f, 0.0f, 1.0f));
+	RegisterRenderItem(esfera1);
+	RenderItem* esfera2 = new RenderItem(sphereShape, new PxTransform(PxVec3(posicionEsfera2.x, posicionEsfera2.y, posicionEsfera2.z)), Vector4(0.0f, 1.0f, 0.0f, 1.0f));
+	RegisterRenderItem(esfera2);
+	RenderItem* esfera3 = new RenderItem(sphereShape, new PxTransform(PxVec3(posicionEsfera3.x, posicionEsfera3.y, posicionEsfera3.z)), Vector4(0.0f, 0.0f, 1.0f, 1.0f));
+	RegisterRenderItem(esfera3);
+
+
+
 	}
 
 

@@ -8,10 +8,12 @@
 #include "core.hpp"
 #include "RenderUtils.hpp"
 #include "callbacks.hpp"
+#include "Particle.h"
 
 #include <iostream>
 
 std::string display_text = "This is a test";
+Particle* p = NULL;
 
 
 using namespace physx;
@@ -56,6 +58,8 @@ void initPhysics(bool interactive)
 	sceneDesc.simulationEventCallback = &gContactReportCallback;
 	gScene = gPhysics->createScene(sceneDesc);
 
+	/*
+
 	//Esfera
 	PxShape* sphereShape = gPhysics->createShape(PxSphereGeometry(2.0f), *gMaterial);
 	PxTransform* sphereTransform = new PxTransform(PxVec3(0.0f, 0.0f, 0.0f));
@@ -78,7 +82,9 @@ void initPhysics(bool interactive)
 	RenderItem* esfera3 = new RenderItem(sphereShape, new PxTransform(PxVec3(posicionEsfera3.x, posicionEsfera3.y, posicionEsfera3.z)), Vector4(0.0f, 0.0f, 1.0f, 1.0f));
 	RegisterRenderItem(esfera3);
 
-
+	*/
+	
+	p = new Particle(Vector3(0.0, 10.0, .0), Vector3(0.0, 0.5, 0.0), Vector3(0.0, -1.0, 0.0), 20.0, 1.0, 0.99);
 
 	}
 
@@ -90,6 +96,9 @@ void stepPhysics(bool interactive, double t)
 {
 	PX_UNUSED(interactive);
 
+	p->integrate(t);
+
+	
 	gScene->simulate(t);
 	gScene->fetchResults(true);
 }

@@ -12,6 +12,8 @@ Particle::Particle(Vector3 pos, Vector3 vel, Vector3 a, double lt, double m, dou
 	if (m <= 0) mass = 0.0;
 	else mass = 1.0 / m;
 
+
+
 	// Render
 	renderItem = new RenderItem(
 		CreateShape(physx::PxSphereGeometry(0.5)),   
@@ -24,16 +26,14 @@ Particle::Particle(Vector3 pos, Vector3 vel, Vector3 a, double lt, double m, dou
 Particle::~Particle()
 {
 	DeregisterRenderItem(renderItem);
-	delete renderItem;
+	//delete renderItem;
 }
 
 void Particle::integrate(double t)
 {
-
 	/*
 	//Euler
-
-	if (mass > 0.0 || lifeTime > 0.0) {
+	if (mass > 0.0 && lifeTime > 0.0) {
 
 		lifeTime -= t;
 
@@ -43,8 +43,7 @@ void Particle::integrate(double t)
 	}
 
 	//Euler semi-implicito
-
-	if(mass> 0.0 || lifeTime > 0.0) {
+	if(mass> 0.0 && lifeTime > 0.0) {
 		
 		lifeTime -= t;
 
@@ -56,7 +55,7 @@ void Particle::integrate(double t)
 
 
 	//Verlet
-	if (mass > 0.0 || lifeTime > 0.0) {
+	if (mass > 0.0 && lifeTime > 0.0) {
 
 		lifeTime -= t;
 

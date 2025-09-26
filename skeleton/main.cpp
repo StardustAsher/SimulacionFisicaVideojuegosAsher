@@ -96,7 +96,13 @@ void stepPhysics(bool interactive, double t)
 {
 	PX_UNUSED(interactive);
 
-	p->integrate(t);
+	if (p != nullptr) {
+		p->integrate(t);
+		if (!p->isAlive()) {
+			delete p;
+			p = nullptr;
+		}
+	}
 
 	
 	gScene->simulate(t);

@@ -16,7 +16,7 @@ Particle::Particle(Vector3 pos, Vector3 vel, Vector3 a, double lt, double m, dou
 
 	// Render
 	renderItem = new RenderItem(
-		CreateShape(physx::PxSphereGeometry(0.5)),   
+		CreateShape(physx::PxSphereGeometry(1.0)),   
 		&position,
 		Vector4(0.8, 0.1, 0.1, 1.0)                 
 	);

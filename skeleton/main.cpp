@@ -33,6 +33,8 @@ PxDefaultCpuDispatcher*	gDispatcher = NULL;
 PxScene*				gScene      = NULL;
 ContactReportCallback gContactReportCallback;
 
+std::vector<Particle*> proyectiles;
+
 
 // Initialize physics engine
 void initPhysics(bool interactive)
@@ -58,7 +60,7 @@ void initPhysics(bool interactive)
 	sceneDesc.simulationEventCallback = &gContactReportCallback;
 	gScene = gPhysics->createScene(sceneDesc);
 
-	/*
+	
 
 	//Esfera
 	PxShape* sphereShape = gPhysics->createShape(PxSphereGeometry(2.0f), *gMaterial);
@@ -82,9 +84,9 @@ void initPhysics(bool interactive)
 	RenderItem* esfera3 = new RenderItem(sphereShape, new PxTransform(PxVec3(posicionEsfera3.x, posicionEsfera3.y, posicionEsfera3.z)), Vector4(0.0f, 0.0f, 1.0f, 1.0f));
 	RegisterRenderItem(esfera3);
 
-	*/
 	
-	p = new Particle(Vector3(0.0, 10.0, .0), Vector3(0.0, 0.5, 0.0), Vector3(0.0, -1.0, 0.0), 20.0, 1.0, 0.99);
+	
+	//p = new Particle(Vector3(0.0, 10.0, .0), Vector3(0.0, 0.5, 0.0), Vector3(0.0, -1.0, 0.0), 20.0, 1.0, 0.99);
 
 	}
 
@@ -96,13 +98,17 @@ void stepPhysics(bool interactive, double t)
 {
 	PX_UNUSED(interactive);
 
-	if (p != nullptr) {
-		p->integrate(t);
-		if (!p->isAlive()) {
-			delete p;
-			p = nullptr;
+	for (int i = proyectiles.size() - 1; i >= 0; --i) {
+		Particle* pr = proyectiles[i];
+		if (pr != nullptr) {
+			pr->integrate(t);
+			if (!pr->isAlive()) {
+				delete pr;
+				proyectiles.erase(proyectiles.begin() + i);
+			}
 		}
 	}
+
 
 	
 	gScene->simulate(t);
@@ -125,31 +131,78 @@ void cleanupPhysics(bool interactive)
 	transport->release();
 	
 	gFoundation->release();
-	}
-
-// Function called when a key is pressed
-void keyPress(unsigned char key, const PxTransform& camera)
-{
-	PX_UNUSED(camera);
-
-	switch(toupper(key))
-	{
-	//case 'B': break;
-	//case ' ':	break;
-	case ' ':
-	{
-		break;
-	}
-	default:
-		break;
-	}
 }
+
+
 
 void onCollision(physx::PxActor* actor1, physx::PxActor* actor2)
 {
 	PX_UNUSED(actor1);
 	PX_UNUSED(actor2);
 }
+
+void dispararProyectil(Vector3 pos, Vector3 dir, double masa, double vel, double velAjustada) {
+	// Normalizamos la dirección
+	dir.normalize();
+
+	// Cálculo de energía
+	double energia = 0.5 * masa * vel * vel;
+
+	//Ajuste de masa
+	double masaAjustada = (2.0 * energia) / (velAjustada * velAjustada);
+
+	// Ajuste de gravedad
+	double gravedad = -9.8 * (velAjustada / vel);
+
+	Vector3 vectorGravedad(0.0, gravedad, 0.0);
+
+	Vector3 vectorVel = dir * velAjustada;
+
+	Particle* nuevo = new Particle(pos, vectorVel, vectorGravedad, 10.0, masaAjustada, 0.99);
+	proyectiles.push_back(nuevo);
+}
+
+void keyPress(unsigned char key, const PxTransform& camera)
+{
+	Vector3 pos = camera.p;
+	Vector3 dir = -camera.q.getBasisVector2(); // Hacia delante
+	dir.normalize();
+
+	switch (toupper(key))
+	{
+	case '1': // Pistola
+		dispararProyectil(pos, dir, 1.0, 330.0, 0.5); //masa, vel, velAjustada
+		break;
+
+	case '2': // Bala de cañón
+		dispararProyectil(pos, dir, 20.0, 250.0, 1.0);
+		break;
+
+	case '3': // Bala de tanque
+		dispararProyectil(pos, dir, 200.0, 1800.0, 2.0);
+		break;
+
+	case '4': // Pistola láser
+		dispararProyectil(pos, dir, 0.01, 3e8, 1.0);
+		
+		break;
+
+	case 'Q': // Proyectil quieto (debug)
+	{
+		Vector3 dirZero(0.0, 0.0, 0.0);
+		Vector3 gravedadZero(0.0, 0.0, 0.0);
+		Particle* quieto = new Particle(pos, dirZero, gravedadZero, 20.0, 1.0, 1.0);
+		proyectiles.push_back(quieto);
+		break;
+	}
+
+	default:
+		break;
+	}
+}
+
+
+
 
 
 int main(int, const char*const*)

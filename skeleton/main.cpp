@@ -72,7 +72,7 @@ void initPhysics(bool interactive)
 	RegisterRenderItem(sphereRenderItem);
 
 	//EsferasVector
-
+	/*
 	Vector3D posicionEsfera1 = Vector3D(10.0f, 0.0f, 0.0f);
 	Vector3D posicionEsfera2 = Vector3D(0.0f, 10.0f, 0.0f);
 	Vector3D posicionEsfera3 = Vector3D(0.0f, 0.0f, 10.0f);
@@ -82,7 +82,7 @@ void initPhysics(bool interactive)
 	RenderItem* esfera2 = new RenderItem(sphereShape, new PxTransform(PxVec3(posicionEsfera2.x, posicionEsfera2.y, posicionEsfera2.z)), Vector4(0.0f, 1.0f, 0.0f, 1.0f));
 	RegisterRenderItem(esfera2);
 	RenderItem* esfera3 = new RenderItem(sphereShape, new PxTransform(PxVec3(posicionEsfera3.x, posicionEsfera3.y, posicionEsfera3.z)), Vector4(0.0f, 0.0f, 1.0f, 1.0f));
-	RegisterRenderItem(esfera3);
+	RegisterRenderItem(esfera3);*/
 
 	
 	
@@ -141,8 +141,8 @@ void onCollision(physx::PxActor* actor1, physx::PxActor* actor2)
 	PX_UNUSED(actor2);
 }
 
-void dispararProyectil(Vector3 pos, Vector3 dir, double masa, double vel, double velAjustada) {
-	// Normalizamos la dirección
+void dispararProyectil(Vector3 pos, Vector3 dir, double masa, double vel, double velAjustada, int shape = 1, Vector4 color = Vector4(1.0, 0.0, 0.0, 1.0)) {
+	
 	dir.normalize();
 
 	// Cálculo de energía
@@ -153,14 +153,15 @@ void dispararProyectil(Vector3 pos, Vector3 dir, double masa, double vel, double
 
 	// Ajuste de gravedad
 	double gravedad = -9.8 * (velAjustada / vel);
-
 	Vector3 vectorGravedad(0.0, gravedad, 0.0);
 
 	Vector3 vectorVel = dir * velAjustada;
 
-	Particle* nuevo = new Particle(pos, vectorVel, vectorGravedad, 10.0, masaAjustada, 0.99);
+	// Crear Particle con shape y color
+	Particle* nuevo = new Particle(pos, vectorVel, vectorGravedad, 10.0, masaAjustada, 0.99, shape, color);
 	proyectiles.push_back(nuevo);
 }
+
 
 void keyPress(unsigned char key, const PxTransform& camera)
 {
@@ -171,27 +172,26 @@ void keyPress(unsigned char key, const PxTransform& camera)
 	switch (toupper(key))
 	{
 	case '1': // Pistola
-		dispararProyectil(pos, dir, 1.0, 330.0, 0.5); //masa, vel, velAjustada
+		dispararProyectil(pos, dir, 1.0, 330.0, 3.3, 1, Vector4(1.0, 0.0, 0.0, 1.0));
 		break;
 
 	case '2': // Bala de cañón
-		dispararProyectil(pos, dir, 20.0, 250.0, 1.0);
+		dispararProyectil(pos, dir, 20.0, 250.0, 2.5, 2, Vector4(0.0, 0.0, 1.0, 1.0));
 		break;
 
 	case '3': // Bala de tanque
-		dispararProyectil(pos, dir, 200.0, 1800.0, 2.0);
+		dispararProyectil(pos, dir, 200.0, 1800.0, 18.0, 3, Vector4(0.5, 0.5, 0.5, 1.0));
 		break;
 
 	case '4': // Pistola láser
-		dispararProyectil(pos, dir, 0.01, 3e8, 1.0);
-		
+		dispararProyectil(pos, dir, 0.01, 3e8, 30.0, 1, Vector4(1.0, 1.0, 0.0, 1.0));
 		break;
 
-	case 'Q': // Proyectil quieto (debug)
+	case 'Q': // Quieto
 	{
 		Vector3 dirZero(0.0, 0.0, 0.0);
 		Vector3 gravedadZero(0.0, 0.0, 0.0);
-		Particle* quieto = new Particle(pos, dirZero, gravedadZero, 20.0, 1.0, 1.0);
+		Particle* quieto = new Particle(pos, dirZero, gravedadZero, 20.0, 1.0, 1.0, 1, Vector4(0.0, 1.0, 0.0, 1.0));
 		proyectiles.push_back(quieto);
 		break;
 	}
@@ -200,6 +200,7 @@ void keyPress(unsigned char key, const PxTransform& camera)
 		break;
 	}
 }
+
 
 
 

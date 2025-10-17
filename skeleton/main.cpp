@@ -9,12 +9,13 @@
 #include "RenderUtils.hpp"
 #include "callbacks.hpp"
 #include "Particle.h"
+#include "ParticleGenerator.h"
 
 #include <iostream>
 
 std::string display_text = "This is a test";
 Particle* p = NULL;
-
+std::vector<ParticleGenerator*> emisores;
 
 using namespace physx;
 
@@ -71,6 +72,18 @@ void initPhysics(bool interactive)
 
 	RegisterRenderItem(sphereRenderItem);
 
+
+	//Emisores de partículas
+	emisores.push_back(new ParticleGenerator(
+		Vector3(0.0f, 0.0f, 0.0f),       // posición
+		Vector3(0.0f, 0.3f, 0.0f),      // velocidad media
+		Vector3(0.0f, -9.8f, 0.0f),     // gravedad
+		30.0, 5.0, 1,                    // tasa, vida, forma (1= esfera)
+		Vector4(0.0f, 0.5f, 1.0f, 0.8f), // color base
+		false, 0.4,                      // sin gaussiana, varianza velocidad
+		0.2, 0.2, 0.3, 0.3               // variaciones de color, opacidad, tamaño, velocidad
+	));
+
 	//EsferasVector
 	/*
 	Vector3D posicionEsfera1 = Vector3D(10.0f, 0.0f, 0.0f);
@@ -108,8 +121,8 @@ void stepPhysics(bool interactive, double t)
 			}
 		}
 	}
-
-
+	for (auto& e : emisores)
+		e->update(t, proyectiles);
 	
 	gScene->simulate(t);
 	gScene->fetchResults(true);
@@ -120,6 +133,9 @@ void stepPhysics(bool interactive, double t)
 void cleanupPhysics(bool interactive)
 {
 	PX_UNUSED(interactive);
+
+	for (auto& e : emisores) delete e;
+	emisores.clear();
 
 	// Rigid Body ++++++++++++++++++++++++++++++++++++++++++
 	gScene->release();
@@ -153,6 +169,7 @@ void dispararProyectil(Vector3 pos, Vector3 dir, double masa, double vel, double
 
 	// Ajuste de gravedad
 	double gravedad = -9.8 * (velAjustada / vel);
+	gravedad = -9.8; 
 	Vector3 vectorGravedad(0.0, gravedad, 0.0);
 
 	Vector3 vectorVel = dir * velAjustada;
@@ -176,7 +193,7 @@ void keyPress(unsigned char key, const PxTransform& camera)
 		break;
 
 	case '2': // Bala de cañón
-		dispararProyectil(pos, dir, 20.0, 250.0, 2.5, 2, Vector4(0.0, 0.0, 1.0, 1.0));
+		dispararProyectil(pos, dir, 20.0, 250.0, 0.5, 2, Vector4(0.0, 0.0, 1.0, 1.0));
 		break;
 
 	case '3': // Bala de tanque

@@ -11,6 +11,8 @@ public:
 	bool isAlive() { return lifeTime > 0.0; }
 	
 
+	
+
 private:
 	Vector3 velocity;
 	Vector3 acceleration;

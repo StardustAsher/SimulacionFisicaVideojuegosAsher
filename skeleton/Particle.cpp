@@ -1,10 +1,12 @@
 #include "Particle.h"
+#include <iostream>
+#include <fstream>
 
 Particle::Particle(Vector3 pos, Vector3 vel, Vector3 a, double lt, double m, double d, int shape, Vector4 color)
 {
 	//Inicializar variables
 	position = physx::PxTransform(pos);
-	prevPosition = { pos.x - vel.x, pos.y - vel.y, pos.z - vel.z };
+	prevPosition = pos;
 	velocity = vel;
 	acceleration = a;
 	lifeTime = lt;
@@ -31,6 +33,7 @@ Particle::Particle(Vector3 pos, Vector3 vel, Vector3 a, double lt, double m, dou
 		break;
 	}
 
+
 	// Render
 	renderItem = new RenderItem(
 		CreateShape(*geometry),   
@@ -52,19 +55,19 @@ Particle::~Particle()
 
 void Particle::integrate(double t)
 {
-	/*
-	//Euler
-	if (mass > 0.0 && lifeTime > 0.0) {
+	
+	////Euler
+	//if (mass > 0.0 && lifeTime > 0.0) {
 
-		lifeTime -= t;
+	//	lifeTime -= t;
 
-		position.p = position.p + velocity * t;
-		velocity = velocity * pow(damping, t) + acceleration * t;
-		
-	}
+	//	position.p = position.p + velocity * t;
+	//	velocity = velocity * pow(damping, t) + acceleration * t;
+	//	
+	//}
 
 	//Euler semi-implicito
-	if(mass> 0.0 && lifeTime > 0.0) {
+	if(mass> 0.0 && lifeTime > 0.0 && firstIntegrate) {
 		
 		lifeTime -= t;
 
@@ -72,22 +75,25 @@ void Particle::integrate(double t)
 		position.p = position.p + velocity * t;
 	}
 
-	*/
+	
 
 
 	//Verlet
-	if (mass > 0.0 && lifeTime > 0.0) {
+	else if (mass > 0.0 && lifeTime > 0.0 ) {
 
 		lifeTime -= t;
 
 		Vector3 currentPos = position.p;
 
-		Vector3 newPos = currentPos + (currentPos - prevPosition) * pow(damping, t) + acceleration * (t * t);
+		Vector3 newPos = 2.0f * currentPos - prevPosition + acceleration * (t * t);
 
 		prevPosition = currentPos;
 		position.p = newPos;
 
+
 	}
+
+	
 
 
 

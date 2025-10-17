@@ -23,5 +23,6 @@ private:
 	physx:: PxTransform position;
 	Vector3 prevPosition;
 	RenderItem* renderItem;
+	bool firstIntegrate = true;
 };
 

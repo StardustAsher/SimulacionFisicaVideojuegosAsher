@@ -4,6 +4,8 @@
 
 #include <vector>
 #include "Vector3D.h"
+#include <chrono>
+#include <thread>
 
 #include "core.hpp"
 #include "RenderUtils.hpp"
@@ -73,15 +75,19 @@ void initPhysics(bool interactive)
 	RegisterRenderItem(sphereRenderItem);
 
 
+
+	//Emitir una particula
+	p = new Particle(Vector3(0.0, 10.0, .0), Vector3(0.0, 5.0, 0.0), Vector3(0.0, -2.0, 0.0), 20.0, 1.0, 0.99, 1, Vector4(1.0, 0.0, 0.0, 1.0));
+	proyectiles.push_back(p);
 	//Emisores de partículas
 	emisores.push_back(new ParticleGenerator(
 		Vector3(0.0f, 0.0f, 0.0f),       // posición
-		Vector3(0.0f, 0.3f, 0.0f),      // velocidad media
-		Vector3(0.0f, -9.8f, 0.0f),     // gravedad
-		30.0, 5.0, 1,                    // tasa, vida, forma (1= esfera)
-		Vector4(0.0f, 0.5f, 1.0f, 0.8f), // color base
-		false, 0.4,                      // sin gaussiana, varianza velocidad
-		0.2, 0.2, 0.3, 0.3               // variaciones de color, opacidad, tamaño, velocidad
+		Vector3(0.0f, 30.0f, 0.0f),      // velocidad media
+		Vector3(0.0f, -10.0f, 0.0f),     // gravedad
+		30.0, 10.0, 1,                    // tasa, vida, forma (1= esfera)
+		Vector4(0.0f, 0.5f, 0.8f, 1.0f), // color base
+		false, 5.0,                      // sin gaussiana, varianza velocidad (dir)
+		0.2, 0.2, 1.0, 0.5               // variaciones de color, opacidad, tamaño, velocidad(num)
 	));
 
 	//EsferasVector
@@ -126,6 +132,8 @@ void stepPhysics(bool interactive, double t)
 	
 	gScene->simulate(t);
 	gScene->fetchResults(true);
+
+	std::this_thread::sleep_for(std::chrono::microseconds(10));
 }
 
 // Function to clean data
@@ -168,8 +176,8 @@ void dispararProyectil(Vector3 pos, Vector3 dir, double masa, double vel, double
 	double masaAjustada = (2.0 * energia) / (velAjustada * velAjustada);
 
 	// Ajuste de gravedad
-	double gravedad = -9.8 * (velAjustada / vel);
-	gravedad = -9.8; 
+	//double gravedad = -9.8 * (velAjustada / vel);
+	double gravedad = -9.8; 
 	Vector3 vectorGravedad(0.0, gravedad, 0.0);
 
 	Vector3 vectorVel = dir * velAjustada;

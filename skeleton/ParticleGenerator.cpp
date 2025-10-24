@@ -1,10 +1,17 @@
 #include "ParticleGenerator.h"
 #include <algorithm> // std::min, std::max
+#include "ParticleForceRegistry.h"
+#include "GravityForceGenerator.h"
+
+ParticleForceRegistry forceRegistry;
+extern GravityForceGenerator* gravityEarth;
+extern GravityForceGenerator* gravityMoon;
+
 
 // Constructor
 ParticleGenerator::ParticleGenerator(Vector3 position,
     Vector3 meanVelocity,
-    Vector3 gravity,
+    int gravity,
     double emitRate,
     double particleLifetime,
     int shape,
@@ -17,7 +24,6 @@ ParticleGenerator::ParticleGenerator(Vector3 position,
     double speedVar)
     : position(position),
     meanVelocity(meanVelocity),
-    gravity(gravity),
     emitRate(emitRate),
     particleLifetime(particleLifetime),
     shape(shape),
@@ -27,7 +33,8 @@ ParticleGenerator::ParticleGenerator(Vector3 position,
     colorVar(colorVar),
     alphaVar(alphaVar),
     sizeVar(sizeVar),
-    speedVar(speedVar)
+    speedVar(speedVar),
+    gravityType(gravity)
 {
 }
 
@@ -42,19 +49,21 @@ void ParticleGenerator::update(double t, std::vector<Particle*>& particleList) {
 }
 
 void ParticleGenerator::emitParticle(std::vector<Particle*>& particleList) {
-    // Velocidad, color y tamaño aleatorios
     Vector3 vel = randomVelocity();
     Vector4 color = randomColor();
     double size = randomSize();
 
-    
     vel = (meanVelocity + vel) * (1.0 + speedVar * uniform(generator));
 
-    // Crear partícula
-    Particle* p = new Particle(position, vel, gravity, particleLifetime, 1.0, 0.99, shape, color);
-
+    // Crear partícula 
+    Particle* p = new Particle(position, vel, Vector3(0, 0, 0), particleLifetime, 10.0, 0.99, shape, color);
     particleList.push_back(p);
+
+    // Registrar gravedad según tipo
+    if (gravityType == 1) forceRegistry.add(p, gravityEarth);
+    else if (gravityType == 2) forceRegistry.add(p, gravityMoon);
 }
+
 
 Vector3 ParticleGenerator::randomVelocity() {
     auto rnd = [&](double base) {
@@ -62,6 +71,7 @@ Vector3 ParticleGenerator::randomVelocity() {
         };
     return Vector3(rnd(0), rnd(0), rnd(0));
 }
+
 
 Vector4 ParticleGenerator::randomColor() {
 	// Limitar entre 0 y 1

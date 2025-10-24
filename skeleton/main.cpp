@@ -12,6 +12,9 @@
 #include "callbacks.hpp"
 #include "Particle.h"
 #include "ParticleGenerator.h"
+#include "ParticleForceRegistry.h"
+#include "GravityForceGenerator.h"
+
 
 #include <iostream>
 
@@ -35,6 +38,11 @@ PxPvd*                  gPvd        = NULL;
 PxDefaultCpuDispatcher*	gDispatcher = NULL;
 PxScene*				gScene      = NULL;
 ContactReportCallback gContactReportCallback;
+
+extern ParticleForceRegistry forceRegistry;
+extern GravityForceGenerator* gravityEarth = new GravityForceGenerator(Vector3(0.0f, -9.8f, 0.0f));
+extern GravityForceGenerator* gravityMoon = new GravityForceGenerator(Vector3(0.0f, -1.6f, 0.0f));
+
 
 std::vector<Particle*> proyectiles;
 
@@ -65,29 +73,38 @@ void initPhysics(bool interactive)
 
 	
 
-	//Esfera
-	PxShape* sphereShape = gPhysics->createShape(PxSphereGeometry(2.0f), *gMaterial);
-	PxTransform* sphereTransform = new PxTransform(PxVec3(0.0f, 0.0f, 0.0f));
-	Vector3 color = Vector3(0.0f, 0.0f, 0.0f); 
-	
-	RenderItem* sphereRenderItem = new RenderItem(sphereShape, sphereTransform, Vector4(color.x, color.y, color.z, 1.0f));
+	////Esfera
+	//PxShape* sphereShape = gPhysics->createShape(PxSphereGeometry(2.0f), *gMaterial);
+	//PxTransform* sphereTransform = new PxTransform(PxVec3(0.0f, 0.0f, 0.0f));
+	//Vector3 color = Vector3(0.0f, 0.0f, 0.0f); 
+	//
+	//RenderItem* sphereRenderItem = new RenderItem(sphereShape, sphereTransform, Vector4(color.x, color.y, color.z, 1.0f));
 
-	RegisterRenderItem(sphereRenderItem);
+	//RegisterRenderItem(sphereRenderItem);
 
 
 
-	//Emitir una particula
-	p = new Particle(Vector3(0.0, 10.0, .0), Vector3(0.0, 5.0, 0.0), Vector3(0.0, -2.0, 0.0), 20.0, 1.0, 0.99, 1, Vector4(1.0, 0.0, 0.0, 1.0));
+	// Particula random
+	p = new Particle(
+		Vector3(0.0, 10.0, 0.0),
+		Vector3(5.0, 0.0, 0.0),
+		Vector3(0.0, 0.0, 0.0), 
+		20.0, 1.0, 0.99, 1, Vector4(1.0, 0.0, 0.0, 1.0)
+	);
 	proyectiles.push_back(p);
-	//Emisores de partículas
+
+	// Registrar la partícula en el ParticleForceRegistry
+	forceRegistry.add(p, gravityEarth);
+
+	// Crear emisores
 	emisores.push_back(new ParticleGenerator(
-		Vector3(0.0f, 0.0f, 0.0f),       // posición
-		Vector3(0.0f, 30.0f, 0.0f),      // velocidad media
-		Vector3(0.0f, -10.0f, 0.0f),     // gravedad
-		30.0, 10.0, 1,                    // tasa, vida, forma (1= esfera)
-		Vector4(0.0f, 0.5f, 0.8f, 1.0f), // color base
-		false, 5.0,                      // sin gaussiana, varianza velocidad (dir)
-		0.2, 0.2, 1.0, 0.5               // variaciones de color, opacidad, tamaño, velocidad(num)
+		Vector3(0.0f, 0.0f, 0.0f),
+		Vector3(0.0f, 30.0f, 0.0f),
+		1,
+		30.0, 10.0, 1,
+		Vector4(0.0f, 0.5f, 0.8f, 1.0f),
+		false, 5.0,
+		0.2, 0.0, 1.0, 0.5
 	));
 
 	//EsferasVector
@@ -117,6 +134,8 @@ void stepPhysics(bool interactive, double t)
 {
 	PX_UNUSED(interactive);
 
+	forceRegistry.updateForces(t); // actualizar fuerzas
+
 	for (int i = proyectiles.size() - 1; i >= 0; --i) {
 		Particle* pr = proyectiles[i];
 		if (pr != nullptr) {
@@ -127,6 +146,7 @@ void stepPhysics(bool interactive, double t)
 			}
 		}
 	}
+
 	for (auto& e : emisores)
 		e->update(t, proyectiles);
 	
@@ -142,20 +162,23 @@ void cleanupPhysics(bool interactive)
 {
 	PX_UNUSED(interactive);
 
+	forceRegistry.clear();
+
+	delete gravityEarth;
+	delete gravityMoon;
+
 	for (auto& e : emisores) delete e;
 	emisores.clear();
 
-	// Rigid Body ++++++++++++++++++++++++++++++++++++++++++
 	gScene->release();
 	gDispatcher->release();
-	// -----------------------------------------------------
-	gPhysics->release();	
+	gPhysics->release();
 	PxPvdTransport* transport = gPvd->getTransport();
 	gPvd->release();
 	transport->release();
-	
 	gFoundation->release();
 }
+
 
 
 
@@ -165,27 +188,23 @@ void onCollision(physx::PxActor* actor1, physx::PxActor* actor2)
 	PX_UNUSED(actor2);
 }
 
-void dispararProyectil(Vector3 pos, Vector3 dir, double masa, double vel, double velAjustada, int shape = 1, Vector4 color = Vector4(1.0, 0.0, 0.0, 1.0)) {
-	
+void dispararProyectil(Vector3 pos, Vector3 dir, double masa, double vel, double velAjustada,
+	int shape = 1, Vector4 color = Vector4(1.0, 0.0, 0.0, 1.0))
+{
 	dir.normalize();
 
-	// Cálculo de energía
 	double energia = 0.5 * masa * vel * vel;
-
-	//Ajuste de masa
 	double masaAjustada = (2.0 * energia) / (velAjustada * velAjustada);
-
-	// Ajuste de gravedad
-	//double gravedad = -9.8 * (velAjustada / vel);
-	double gravedad = -9.8; 
-	Vector3 vectorGravedad(0.0, gravedad, 0.0);
-
 	Vector3 vectorVel = dir * velAjustada;
 
-	// Crear Particle con shape y color
-	Particle* nuevo = new Particle(pos, vectorVel, vectorGravedad, 10.0, masaAjustada, 0.99, shape, color);
+	
+	Particle* nuevo = new Particle(pos, vectorVel, Vector3(0, 0, 0), 10.0, masaAjustada, 0.99, shape, color);
 	proyectiles.push_back(nuevo);
+
+	
+	forceRegistry.add(nuevo, gravityEarth);
 }
+
 
 
 void keyPress(unsigned char key, const PxTransform& camera)
@@ -196,28 +215,49 @@ void keyPress(unsigned char key, const PxTransform& camera)
 
 	switch (toupper(key))
 	{
-	case '1': // Pistola
-		dispararProyectil(pos, dir, 1.0, 330.0, 3.3, 1, Vector4(1.0, 0.0, 0.0, 1.0));
-		break;
-
-	case '2': // Bala de cañón
-		dispararProyectil(pos, dir, 20.0, 250.0, 0.5, 2, Vector4(0.0, 0.0, 1.0, 1.0));
-		break;
-
-	case '3': // Bala de tanque
-		dispararProyectil(pos, dir, 200.0, 1800.0, 18.0, 3, Vector4(0.5, 0.5, 0.5, 1.0));
-		break;
-
-	case '4': // Pistola láser
-		dispararProyectil(pos, dir, 0.01, 3e8, 30.0, 1, Vector4(1.0, 1.0, 0.0, 1.0));
-		break;
-
-	case 'Q': // Quieto
+	case '1': //Pistola
 	{
-		Vector3 dirZero(0.0, 0.0, 0.0);
-		Vector3 gravedadZero(0.0, 0.0, 0.0);
-		Particle* quieto = new Particle(pos, dirZero, gravedadZero, 20.0, 1.0, 1.0, 1, Vector4(0.0, 1.0, 0.0, 1.0));
-		proyectiles.push_back(quieto);
+		double masa = 0.008;         
+		double vel = 380.0;           
+		double velAjustada = 100.0;   
+		dispararProyectil(pos, dir, masa, vel, velAjustada, 1, Vector4(1.0, 0.0, 0.0, 1.0));
+		break;
+	}
+
+	case '2': //Bala de cañón ligera
+	{
+		double masa = 6.0;            
+		double vel = 250.0;           
+		double velAjustada = 60.0;    
+		dispararProyectil(pos, dir, masa, vel, velAjustada, 2, Vector4(0.0, 0.0, 1.0, 1.0));
+		break;
+	}
+
+	case '3': //Proyectil de tanque 
+	{
+		double masa = 20.0;           
+		double vel = 1500.0;         
+		double velAjustada = 120.0;   
+		dispararProyectil(pos, dir, masa, vel, velAjustada, 3, Vector4(0.5, 0.5, 0.5, 1.0));
+		break;
+	}
+
+	case '4': //Láser 
+	{
+		double masa = 0.000001;       
+		double vel = 3e8;             
+		double velAjustada = 300.0;   
+		Particle* laser = new Particle(pos, dir * velAjustada, Vector3(0, 0, 0), 3.0, masa, 1.0, 1, Vector4(1.0, 1.0, 0.0, 1.0));
+		proyectiles.push_back(laser);
+		break;
+	}
+
+	case 'Q': //Partícula estática — solo cae
+	{
+		double masa = 1.0;            
+		double vel = 0.0;             // sin movimiento
+		double velAjustada = 0.0;     
+		dispararProyectil(pos, dir, masa, vel, velAjustada, 1, Vector4(0.0, 1.0, 0.0, 1.0));
 		break;
 	}
 
@@ -225,6 +265,7 @@ void keyPress(unsigned char key, const PxTransform& camera)
 		break;
 	}
 }
+
 
 
 

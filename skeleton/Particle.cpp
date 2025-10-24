@@ -55,14 +55,14 @@ Particle::~Particle()
 
 void Particle::integrate(double t)
 {
-	
+
 	////Euler
 	//if (mass > 0.0 && lifeTime > 0.0) {
 
 	//	lifeTime -= t;
 
 	//	position.p = position.p + velocity * t;
-	//	velocity = velocity * pow(damping, t) + acceleration * t;
+	//	velocity = velocity * pow(damping, t) + accumulatedForce * t;
 	//	
 	//}
 
@@ -71,7 +71,7 @@ void Particle::integrate(double t)
 		
 		lifeTime -= t;
 
-		velocity = velocity * pow(damping, t) + acceleration * t;
+		velocity = velocity * pow(damping, t) + accumulatedForce * t;
 		position.p = position.p + velocity * t;
 	}
 
@@ -85,17 +85,12 @@ void Particle::integrate(double t)
 
 		Vector3 currentPos = position.p;
 
-		Vector3 newPos = 2.0f * currentPos - prevPosition + acceleration * (t * t);
+		Vector3 newPos = 2.0f * currentPos - prevPosition + accumulatedForce * (t * t);
 
 		prevPosition = currentPos;
 		position.p = newPos;
-
-
 	}
 
-	
-
-
+	ClearForce();
 
 }
-

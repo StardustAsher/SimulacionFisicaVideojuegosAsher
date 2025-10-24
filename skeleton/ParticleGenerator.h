@@ -3,16 +3,17 @@
 #include "Particle.h"
 #include <vector>
 #include <random>
+#include <algorithm> // std::min, std::max
 
 class ParticleGenerator {
 public:
     ParticleGenerator(Vector3 position,
         Vector3 meanVelocity,
-        Vector3 gravity,
-        double emitRate,
-        double particleLifetime,
-        int shape,
-        Vector4 baseColor,
+        int gravity,
+        double emitRate = 10.0,
+        double particleLifetime = 5.0,
+        int shape = 0,
+        Vector4 baseColor = Vector4(1, 1, 1, 1),
         bool useGaussian = false,
         double var = 1.0,
         double colorVar = 0.0,
@@ -32,6 +33,7 @@ private:
     double particleLifetime;
     int shape;
     Vector4 baseColor;
+    int gravityType; // 0 = none, 1 = earth, 2 = moon
 
     // Control de variabilidad
     bool useGaussian;

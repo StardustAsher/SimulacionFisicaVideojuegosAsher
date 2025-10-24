@@ -9,8 +9,17 @@ public:
 
 	void integrate(double t);
 	bool isAlive() { return lifeTime > 0.0; }
-	
 
+	 void AddForce(const Vector3& force) {
+        accumulatedForce += force;
+    }
+
+    void ClearForce() {
+        accumulatedForce = {0, 0, 0};
+    }
+
+    double getMass() const { return mass > 0 ? 1.0 / mass : 0.0; }
+    double getInvMass() const { return mass; }
 	
 
 private:
@@ -24,5 +33,7 @@ private:
 	Vector3 prevPosition;
 	RenderItem* renderItem;
 	bool firstIntegrate = true;
+
+	Vector3 accumulatedForce;
 };
 

@@ -1,5 +1,6 @@
 #include "ParticleForceRegistry.h"
 #include <algorithm> 
+#include <iostream>
 
 
 void ParticleForceRegistry::add(Particle* particle, ForceGenerator* fg) // añadir al registro la pareja particula-fuerza
@@ -14,9 +15,8 @@ void ParticleForceRegistry::remove(Particle* particle, ForceGenerator* fg) //eli
         std::remove_if(registrations.begin(), registrations.end(),
             [particle, fg](const ForceRegistration& r) {
                 return r.particle == particle && r.fg == fg;
-            }),
-        registrations.end());
-    
+            }), registrations.end());
+
 }
 
 void ParticleForceRegistry::clear() //limpiar el registro
@@ -29,4 +29,5 @@ void ParticleForceRegistry::updateForces(double t) //llamar a todos los updateFo
     for (auto& reg : registrations) {
         reg.fg->updateForce(reg.particle, t);
     }
+
 }

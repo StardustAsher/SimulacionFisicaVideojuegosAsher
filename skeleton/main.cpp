@@ -74,22 +74,22 @@ void initPhysics(bool interactive)
 	
 
 	////Esfera
-	//PxShape* sphereShape = gPhysics->createShape(PxSphereGeometry(2.0f), *gMaterial);
-	//PxTransform* sphereTransform = new PxTransform(PxVec3(0.0f, 0.0f, 0.0f));
-	//Vector3 color = Vector3(0.0f, 0.0f, 0.0f); 
-	//
-	//RenderItem* sphereRenderItem = new RenderItem(sphereShape, sphereTransform, Vector4(color.x, color.y, color.z, 1.0f));
+	PxShape* sphereShape = gPhysics->createShape(PxSphereGeometry(2.0f), *gMaterial);
+	PxTransform* sphereTransform = new PxTransform(PxVec3(0.0f, 0.0f, 0.0f));
+	Vector3 color = Vector3(0.0f, 0.0f, 0.0f); 
+	
+	RenderItem* sphereRenderItem = new RenderItem(sphereShape, sphereTransform, Vector4(color.x, color.y, color.z, 1.0f));
 
-	//RegisterRenderItem(sphereRenderItem);
+	RegisterRenderItem(sphereRenderItem);
 
 
 
 	// Particula random
 	p = new Particle(
 		Vector3(0.0, 10.0, 0.0),
-		Vector3(5.0, 0.0, 0.0),
+		Vector3(0.0, 30.0, 0.0),
 		Vector3(0.0, 0.0, 0.0), 
-		20.0, 1.0, 0.99, 1, Vector4(1.0, 0.0, 0.0, 1.0)
+		20.0, 10.0, 0.99, 1, Vector4(1.0, 0.0, 0.0, 1.0)
 	);
 	proyectiles.push_back(p);
 
@@ -97,7 +97,7 @@ void initPhysics(bool interactive)
 	forceRegistry.add(p, gravityEarth);
 
 	// Crear emisores
-	emisores.push_back(new ParticleGenerator(
+	/*emisores.push_back(new ParticleGenerator(
 		Vector3(0.0f, 0.0f, 0.0f),
 		Vector3(0.0f, 30.0f, 0.0f),
 		1,
@@ -105,10 +105,10 @@ void initPhysics(bool interactive)
 		Vector4(0.0f, 0.5f, 0.8f, 1.0f),
 		false, 5.0,
 		0.2, 0.0, 1.0, 0.5
-	));
+	));*/
 
 	//EsferasVector
-	/*
+	
 	Vector3D posicionEsfera1 = Vector3D(10.0f, 0.0f, 0.0f);
 	Vector3D posicionEsfera2 = Vector3D(0.0f, 10.0f, 0.0f);
 	Vector3D posicionEsfera3 = Vector3D(0.0f, 0.0f, 10.0f);
@@ -118,14 +118,9 @@ void initPhysics(bool interactive)
 	RenderItem* esfera2 = new RenderItem(sphereShape, new PxTransform(PxVec3(posicionEsfera2.x, posicionEsfera2.y, posicionEsfera2.z)), Vector4(0.0f, 1.0f, 0.0f, 1.0f));
 	RegisterRenderItem(esfera2);
 	RenderItem* esfera3 = new RenderItem(sphereShape, new PxTransform(PxVec3(posicionEsfera3.x, posicionEsfera3.y, posicionEsfera3.z)), Vector4(0.0f, 0.0f, 1.0f, 1.0f));
-	RegisterRenderItem(esfera3);*/
+	RegisterRenderItem(esfera3);
 
-	
-	
-	//p = new Particle(Vector3(0.0, 10.0, .0), Vector3(0.0, 0.5, 0.0), Vector3(0.0, -1.0, 0.0), 20.0, 1.0, 0.99);
-
-	}
-
+}
 
 // Function to configure what happens in each step of physics
 // interactive: true if the game is rendering, false if it offline
@@ -134,12 +129,16 @@ void stepPhysics(bool interactive, double t)
 {
 	PX_UNUSED(interactive);
 
-	forceRegistry.updateForces(t); // actualizar fuerzas
+	double t_sec = t / 1000.0;
 
+	// Actualizar fuerzas
+	forceRegistry.updateForces(t_sec);
+
+	// Integrar partículas existentes
 	for (int i = proyectiles.size() - 1; i >= 0; --i) {
 		Particle* pr = proyectiles[i];
 		if (pr != nullptr) {
-			pr->integrate(t);
+			pr->integrate(t_sec);
 			if (!pr->isAlive()) {
 				delete pr;
 				proyectiles.erase(proyectiles.begin() + i);
@@ -147,14 +146,14 @@ void stepPhysics(bool interactive, double t)
 		}
 	}
 
+	// Generadores de partículas
 	for (auto& e : emisores)
-		e->update(t, proyectiles);
-	
-	gScene->simulate(t);
-	gScene->fetchResults(true);
+		e->update(t_sec, proyectiles); 
+
 
 	std::this_thread::sleep_for(std::chrono::microseconds(10));
 }
+
 
 // Function to clean data
 // Add custom code to the begining of the function

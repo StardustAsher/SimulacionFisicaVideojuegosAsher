@@ -16,25 +16,27 @@ ParticleGenerator::ParticleGenerator(Vector3 position,
     double particleLifetime,
     int shape,
     Vector4 baseColor,
+	double size,
     bool useGaussian,
     double var,
     double colorVar,
     double alphaVar,
     double sizeVar,
-    double speedVar)
+    double speedVar,double varx,double vary,double varz)
     : position(position),
     meanVelocity(meanVelocity),
     emitRate(emitRate),
     particleLifetime(particleLifetime),
     shape(shape),
     baseColor(baseColor),
+	baseSize(size),
     useGaussian(useGaussian),
     variance(var),
     colorVar(colorVar),
     alphaVar(alphaVar),
     sizeVar(sizeVar),
     speedVar(speedVar),
-    gravityType(gravity)
+	gravityType(gravity),varx(varx), vary(vary), varz(varz)
 {
 }
 
@@ -49,6 +51,7 @@ void ParticleGenerator::update(double t, std::vector<Particle*>& particleList) {
 }
 
 void ParticleGenerator::emitParticle(std::vector<Particle*>& particleList) {
+
     Vector3 vel = randomVelocity();
     Vector4 color = randomColor();
     double size = randomSize();
@@ -56,7 +59,7 @@ void ParticleGenerator::emitParticle(std::vector<Particle*>& particleList) {
     vel = (meanVelocity + vel) * (1.0 + speedVar * uniform(generator));
 
     // Crear partícula 
-    Particle* p = new Particle(position, vel, Vector3(0, 0, 0), particleLifetime, 10.0, 0.99, shape, color);
+    Particle* p = new Particle(position, vel, Vector3(0, 0, 0), particleLifetime, 10.0, 0.99, shape, color,size);
     particleList.push_back(p);
 
     // Registrar gravedad según tipo
@@ -66,11 +69,19 @@ void ParticleGenerator::emitParticle(std::vector<Particle*>& particleList) {
 
 
 Vector3 ParticleGenerator::randomVelocity() {
-    auto rnd = [&](double base) {
-        return base + (useGaussian ? gaussian(generator) : uniform(generator)) * variance;
-        };
-    return Vector3(rnd(0), rnd(0), rnd(0));
+    // Variación independiente por componente
+    auto rnd = [&](double var) {
+        return (useGaussian ? gaussian(generator) : uniform(generator)) * var;
+    };
+
+    // meanVelocity define la dirección base del chorro
+    double vx = meanVelocity.x + rnd(varx);
+    double vy = meanVelocity.y + rnd(vary);
+    double vz = meanVelocity.z + rnd(varz);
+
+    return Vector3(vx, vy, vz);
 }
+
 
 
 Vector4 ParticleGenerator::randomColor() {
@@ -90,7 +101,12 @@ Vector4 ParticleGenerator::randomColor() {
 }
 
 double ParticleGenerator::randomSize() {
-    double s = 1.0 + uniform(generator) * sizeVar;
-    if (s < 0.1) s = 0.1; // evitar tamaños demasiado pequeños
+    // tamaño base definido en el constructor
+    double s = baseSize + uniform(generator) * sizeVar;
+
+    // límite inferior para evitar partículas invisibles
+    if (s < 0.1) s = 0.1;
+
     return s;
 }
+

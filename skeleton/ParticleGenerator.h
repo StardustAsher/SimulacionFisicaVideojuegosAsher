@@ -14,12 +14,13 @@ public:
         double particleLifetime = 5.0,
         int shape = 0,
         Vector4 baseColor = Vector4(1, 1, 1, 1),
+		double baseSize = 0.5,
         bool useGaussian = false,
         double var = 1.0,
         double colorVar = 0.0,
         double alphaVar = 0.0,
         double sizeVar = 0.0,
-        double speedVar = 0.0);
+        double speedVar = 0.0,double varx = 0.0,double vary = 0.0,double varz = 0.0);
 
     // Actualiza el emisor y genera nuevas partículas
     void update(double t, std::vector<Particle*>& particleList);
@@ -33,6 +34,7 @@ private:
     double particleLifetime;
     int shape;
     Vector4 baseColor;
+    double baseSize;
     int gravityType; // 0 = none, 1 = earth, 2 = moon
 
     // Control de variabilidad
@@ -42,6 +44,8 @@ private:
     double alphaVar;     // variación de la opacidad
     double sizeVar;      // variación del tamaño
     double speedVar;     // variación de la velocidad
+
+	double varx, vary, varz; // variación por componente
 
     double timeAccumulator = 0.0;
 

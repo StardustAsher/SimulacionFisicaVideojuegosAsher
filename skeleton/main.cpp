@@ -73,43 +73,40 @@ void initPhysics(bool interactive)
 
 	
 
-	////Esfera
-	PxShape* sphereShape = gPhysics->createShape(PxSphereGeometry(2.0f), *gMaterial);
-	PxTransform* sphereTransform = new PxTransform(PxVec3(0.0f, 0.0f, 0.0f));
-	Vector3 color = Vector3(0.0f, 0.0f, 0.0f); 
-	
-	RenderItem* sphereRenderItem = new RenderItem(sphereShape, sphereTransform, Vector4(color.x, color.y, color.z, 1.0f));
+	//////Esfera
+	//PxShape* sphereShape = gPhysics->createShape(PxSphereGeometry(2.0f), *gMaterial);
+	//PxTransform* sphereTransform = new PxTransform(PxVec3(0.0f, 0.0f, 0.0f));
+	//Vector3 color = Vector3(0.0f, 0.0f, 0.0f); 
+	//
+	//RenderItem* sphereRenderItem = new RenderItem(sphereShape, sphereTransform, Vector4(color.x, color.y, color.z, 1.0f));
 
-	RegisterRenderItem(sphereRenderItem);
+	//RegisterRenderItem(sphereRenderItem);
 
-
-
-	// Particula random
-	p = new Particle(
-		Vector3(0.0, 10.0, 0.0),
-		Vector3(0.0, 30.0, 0.0),
-		Vector3(0.0, 0.0, 0.0), 
-		20.0, 10.0, 0.99, 1, Vector4(1.0, 0.0, 0.0, 1.0)
+	ParticleGenerator* water = new ParticleGenerator(
+		Vector3(0, 10, 0),        // posición de la boquilla
+		Vector3(0, 2, 25),       // velocidad media (ligeramente hacia arriba y adelante)
+		1,                       // gravedad terrestre
+		100,                     // emisión rápida (chorro denso)
+		2.0,                     // vida útil
+		2,                       // cubo
+		Vector4(0.3, 0.5, 1.0, 1.0), // azul 
+		1,                     // tamaño base
+		false,                 // sin gaussiana (más estable)
+		0.1,                   // var
+		0.2,                   // colorVar
+		0.1,                   // alphaVar
+		0.6,                   // sizeVar
+		0.1,                   // speedVar
+		0.2,                   // varX
+		0.1,                   // varY
+		0.4                    // varZ
 	);
-	proyectiles.push_back(p);
 
-	// Registrar la partícula en el ParticleForceRegistry
-	forceRegistry.add(p, gravityEarth);
-
-	// Crear emisores
-	/*emisores.push_back(new ParticleGenerator(
-		Vector3(0.0f, 0.0f, 0.0f),
-		Vector3(0.0f, 30.0f, 0.0f),
-		1,
-		30.0, 10.0, 1,
-		Vector4(0.0f, 0.5f, 0.8f, 1.0f),
-		false, 5.0,
-		0.2, 0.0, 1.0, 0.5
-	));*/
+	emisores.push_back(water);
 
 	//EsferasVector
 	
-	Vector3D posicionEsfera1 = Vector3D(10.0f, 0.0f, 0.0f);
+	/*Vector3D posicionEsfera1 = Vector3D(10.0f, 0.0f, 0.0f);
 	Vector3D posicionEsfera2 = Vector3D(0.0f, 10.0f, 0.0f);
 	Vector3D posicionEsfera3 = Vector3D(0.0f, 0.0f, 10.0f);
 
@@ -118,7 +115,7 @@ void initPhysics(bool interactive)
 	RenderItem* esfera2 = new RenderItem(sphereShape, new PxTransform(PxVec3(posicionEsfera2.x, posicionEsfera2.y, posicionEsfera2.z)), Vector4(0.0f, 1.0f, 0.0f, 1.0f));
 	RegisterRenderItem(esfera2);
 	RenderItem* esfera3 = new RenderItem(sphereShape, new PxTransform(PxVec3(posicionEsfera3.x, posicionEsfera3.y, posicionEsfera3.z)), Vector4(0.0f, 0.0f, 1.0f, 1.0f));
-	RegisterRenderItem(esfera3);
+	RegisterRenderItem(esfera3);*/
 
 }
 
@@ -129,16 +126,14 @@ void stepPhysics(bool interactive, double t)
 {
 	PX_UNUSED(interactive);
 
-	double t_sec = t / 1000.0;
-
 	// Actualizar fuerzas
-	forceRegistry.updateForces(t_sec);
+	forceRegistry.updateForces(t);
 
 	// Integrar partículas existentes
 	for (int i = proyectiles.size() - 1; i >= 0; --i) {
 		Particle* pr = proyectiles[i];
 		if (pr != nullptr) {
-			pr->integrate(t_sec);
+			pr->integrate(t);
 			if (!pr->isAlive()) {
 				delete pr;
 				proyectiles.erase(proyectiles.begin() + i);
@@ -148,7 +143,7 @@ void stepPhysics(bool interactive, double t)
 
 	// Generadores de partículas
 	for (auto& e : emisores)
-		e->update(t_sec, proyectiles); 
+		e->update(t, proyectiles); 
 
 
 	std::this_thread::sleep_for(std::chrono::microseconds(10));
@@ -196,8 +191,9 @@ void dispararProyectil(Vector3 pos, Vector3 dir, double masa, double vel, double
 	double masaAjustada = (2.0 * energia) / (velAjustada * velAjustada);
 	Vector3 vectorVel = dir * velAjustada;
 
-	
-	Particle* nuevo = new Particle(pos, vectorVel, Vector3(0, 0, 0), 10.0, masaAjustada, 0.99, shape, color);
+	double size = 0.5; // Tamaño por defecto
+
+	Particle* nuevo = new Particle(pos, vectorVel, Vector3(0, 0, 0), 10.0, masaAjustada, 0.99, shape, color, size);
 	proyectiles.push_back(nuevo);
 
 	
@@ -241,12 +237,23 @@ void keyPress(unsigned char key, const PxTransform& camera)
 		break;
 	}
 
-	case '4': //Láser 
+	case '4': // Láser 
 	{
-		double masa = 0.000001;       
-		double vel = 3e8;             
-		double velAjustada = 300.0;   
-		Particle* laser = new Particle(pos, dir * velAjustada, Vector3(0, 0, 0), 3.0, masa, 1.0, 1, Vector4(1.0, 1.0, 0.0, 1.0));
+		double masa = 0.000001;
+		double vel = 3e8;
+		double velAjustada = 300.0;
+		double size = 0.05;           // Muy pequeño
+		Particle* laser = new Particle(
+			pos,
+			dir * velAjustada,
+			Vector3(0, 0, 0),
+			3.0,
+			masa,
+			1.0,
+			1,
+			Vector4(1.0, 1.0, 0.0, 1.0),
+			size
+		);
 		proyectiles.push_back(laser);
 		break;
 	}
@@ -264,11 +271,6 @@ void keyPress(unsigned char key, const PxTransform& camera)
 		break;
 	}
 }
-
-
-
-
-
 
 
 int main(int, const char*const*)

@@ -2,7 +2,7 @@
 #include <iostream>
 #include <fstream>
 
-Particle::Particle(Vector3 pos, Vector3 vel, Vector3 a, double lt, double m, double d, int shape, Vector4 color)
+Particle::Particle(Vector3 pos, Vector3 vel, Vector3 a, double lt, double m, double d, int shape, Vector4 color, double size)
 {
 	//Inicializar variables
 	position = physx::PxTransform(pos);
@@ -15,22 +15,27 @@ Particle::Particle(Vector3 pos, Vector3 vel, Vector3 a, double lt, double m, dou
 	else mass = 1.0 / m;
 	_shape = shape;
 	firstIntegrate = true;
+	accumulatedForce = Vector3(0.0f, 0.0f, 0.0f);
+	particleSize = size;
+
+	if (std::isnan(particleSize) || particleSize <= 0.0)
+		particleSize = 0.1;  // tamaño mínimo
 
 
 	// Shapes
 	physx::PxGeometry* geometry = nullptr;
 	switch (shape) {
 	case 1: // Esfera
-		geometry = new physx::PxSphereGeometry(1.0);
+		geometry = new physx::PxSphereGeometry(particleSize);
 		break;
 	case 2: // Cubo
-		geometry = new physx::PxBoxGeometry(0.5, 0.5, 0.5);
+		geometry = new physx::PxBoxGeometry(particleSize, particleSize, particleSize);
 		break;
-	case 3: // Cilinro
-		geometry = new physx::PxCapsuleGeometry(0.2, 1.0); 
+	case 3: // Cilindro
+		geometry = new physx::PxCapsuleGeometry(particleSize * 0.2, particleSize);
 		break;
 	default: // Por defecto
-		geometry = new physx::PxSphereGeometry(0.5);
+		geometry = new physx::PxSphereGeometry(particleSize);
 		break;
 	}
 
@@ -42,7 +47,7 @@ Particle::Particle(Vector3 pos, Vector3 vel, Vector3 a, double lt, double m, dou
 		color                     
 	);
 
-	RegisterRenderItem(renderItem);
+	//RegisterRenderItem(renderItem);
 
 	
 	delete geometry;
@@ -51,16 +56,14 @@ Particle::Particle(Vector3 pos, Vector3 vel, Vector3 a, double lt, double m, dou
 Particle::~Particle()
 {
 	DeregisterRenderItem(renderItem);
-	//delete renderItem;
+	delete renderItem;
 }
 
 void Particle::integrate(double t)
 {
 	acceleration = accumulatedForce / mass;
 
-	std::cout << "Particle Acceleration: " << acceleration.x << ", " << acceleration.y << ", " << acceleration.z << std::endl;
-	std::cout << "Particle Velocity: " << velocity.x << ", " << velocity.y << ", " << velocity.z << std::endl;
-	std::cout << "Acumulated Force: " << accumulatedForce.x << ", " << accumulatedForce.y << ", " << accumulatedForce.z << std::endl;
+	
 	////Euler
 	//if (mass > 0.0 && lifeTime > 0.0) {
 
@@ -72,20 +75,22 @@ void Particle::integrate(double t)
 	//}
 
 	//Euler semi-implicito
-	if(mass> 0.0 && lifeTime > 0.0 && firstIntegrate) {
+	if(mass> 0.0 && lifeTime > 0.0 ) {
 		
 		lifeTime -= t;
-
+		prevPosition = position.p;
 		velocity = velocity * pow(damping, t) + acceleration * t;
 		position.p = position.p + velocity * t;
 		firstIntegrate = false;
+		
+		
 	}
 
 	
 
 
 	//Verlet
-	else if (mass > 0.0 && lifeTime > 0.0 ) {
+	/*else if (mass > 0.0 && lifeTime > 0.0 ) {
 
 		lifeTime -= t;
 
@@ -93,11 +98,13 @@ void Particle::integrate(double t)
 
 		Vector3 newPos = 2.0f * currentPos - prevPosition + acceleration * (t * t);
 
+		std::cout << "New Pos: " << newPos.x << ", " << newPos.y << ", " << newPos.z << std::endl;
+
 		prevPosition = currentPos;
 		position.p = newPos;
-	}
+	}*/
 
-	std::cout << "Particle Position: " << position.p.x << ", " << position.p.y << ", " << position.p.z << std::endl;
+	
 
 	ClearForce();
 

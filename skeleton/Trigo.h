@@ -32,6 +32,9 @@ public:
 
     void update(double t);
     void regar(); // activa el crecimiento
+    void reset();
+    bool estaMaduro() const;
+
 
     // getter para acceder al generador desde el main
     ParticleGenerator* getParticleGenerator() const { return particulas; }

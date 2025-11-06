@@ -1,4 +1,4 @@
-#include <ctype.h>
+﻿#include <ctype.h>
 #include <PxPhysicsAPI.h>
 #include <vector>
 #include <chrono>
@@ -13,15 +13,18 @@
 #include "ParticleGenerator.h"
 #include "ParticleForceRegistry.h"
 #include "GravityForceGenerator.h"
+#include "WindForceGenerator.h"
 #include "Trigo.h" // Nueva clase
 
-std::string display_text = "This is a test";
+int trigoDisponible = 10;
+std::string display_text = "Trigo disponible: " + std::to_string(trigoDisponible);
 Particle* p = NULL;
 
 std::vector<ParticleGenerator*> emisores;
 std::vector<double> tiempoRestanteEmisor;
 std::vector<RenderItem*> plantas;
 std::vector<Trigo*> cultivos; // Vector de plantas de trigo
+
 
 using namespace physx;
 
@@ -39,13 +42,18 @@ ContactReportCallback gContactReportCallback;
 ParticleForceRegistry forceRegistry;
 extern GravityForceGenerator* gravityEarth = new GravityForceGenerator(Vector3(0.0f, -9.8f, 0.0f));
 extern GravityForceGenerator* gravityMoon = new GravityForceGenerator(Vector3(0.0f, -1.6f, 0.0f));
-
+extern WindForceGenerator* vientoSuave = new WindForceGenerator(
+	Vector3(1.0, 0.0, 0.1),  // Dirección base
+	5.0                      //Fuerza base
+);
 
 std::vector<Particle*> proyectiles;
 
 
+
+
 // ============================================================
-// Inicializaci�n del motor de f�sica
+// Inicialización del motor de física
 // ============================================================
 void initPhysics(bool interactive)
 {
@@ -124,10 +132,51 @@ void initPhysics(bool interactive)
 		tiempoRestanteEmisor.push_back(0.0);
 	}
 }
+void dispararProyectil(const Vector3& pos, const Vector3& dirOriginal, double masa, double vel, double velAjustada, int tipo, const Vector4& color)
+{
+	Vector3 dir = dirOriginal;
+	dir.normalize();
+	double energia = 0.5 * masa * vel * vel;
 
+
+	double masaAjustada = (2.0 * energia) / (velAjustada * velAjustada);
+
+	// Velocidad inicial ajustada
+	Vector3 vectorVel = dir * velAjustada;
+
+	double size = 0.5;
+	switch (tipo)
+	{
+	case 1: size = 0.2; break;  // Pistola
+	case 2: size = 0.4; break;  // Bala de cañón ligera
+	case 3: size = 0.8; break;  // Tanque
+	case 4: size = 0.05; break; // Láser
+	case 5: size = 0.3; break;  // Trigo 
+	default: break;
+	}
+
+	// Crear proyectil con la masa ajustada
+	Particle* nuevo = new Particle(
+		pos,                   // Posición inicial
+		vectorVel,              // Velocidad ajustada
+		Vector3(0.0, 0.0, 0.0),                   // Aceleración inicial
+		10.0,                   // Tiempo de vida
+		masaAjustada,           // Masa ajustada a la escala
+		0.99,                   // Damping
+		2,                      // shape (cubo)
+		color,                  // Color 
+		size                    // Tamaño 
+	);
+
+	// Añadir al vector global de proyectiles
+	proyectiles.push_back(nuevo);
+
+
+	forceRegistry.add(nuevo, gravityEarth);
+}
 
 // ============================================================
-// Step de f�sica (por frame)
+// Step de física (por frame)
 // ============================================================
 void stepPhysics(bool interactive, double t)
 {
@@ -135,7 +184,7 @@ void stepPhysics(bool interactive, double t)
 
 	forceRegistry.updateForces(t);
 
-	// Integrar part�culas existentes (proyectiles)
+	// Integrar partículas existentes (proyectiles)
 	for (int i = proyectiles.size() - 1; i >= 0; --i) {
 		Particle* pr = proyectiles[i];
 		if (pr != nullptr) {
@@ -159,12 +208,12 @@ void stepPhysics(bool interactive, double t)
 		}
 	}
 
-	// Actualizar crecimiento del trigo (l�gica visual) y sus generadores de part�culas
+	// Actualizar crecimiento del trigo (lógica visual) y sus generadores de partículas
 	for (auto& trigo : cultivos) {
-		// Actualiza la l�gica de crecimiento / color del trigo
+		// Actualiza la lógica de crecimiento / color del trigo
 		trigo->update(t);
 
-		// Actualiza el ParticleGenerator del trigo, pasando el vector global de proyectiles
+		// Actualiza el ParticleGenerator del trigo
 		ParticleGenerator* gen = trigo->getParticleGenerator();
 		if (gen && gen->isActive()) {
 			gen->update(t, proyectiles);
@@ -249,6 +298,10 @@ void onCollision(physx::PxActor* actor1, physx::PxActor* actor2)
 // ============================================================
 void keyPress(unsigned char key, const PxTransform& camera)
 {
+	Vector3 pos = camera.p;
+	Vector3 dir = -camera.q.getBasisVector2(); // Hacia delante
+	dir.normalize();
+
 	switch (toupper(key))
 	{
 	case '1':
@@ -263,10 +316,39 @@ void keyPress(unsigned char key, const PxTransform& camera)
 		}
 		break;
 	}
+	case 'E':
+	{
+		for (auto& trigo : cultivos) {
+			if (trigo->estaMaduro()) {
+				trigo->reset();
+				trigoDisponible++;
+				std::cout << "Trigo recolectado. Total disponible: " << trigoDisponible << std::endl;
+			}
+		}
+		display_text = "Trigo disponible: " + std::to_string(trigoDisponible);
+		break;
+	}
+	case 'T': // Disparar trigo 
+	{
+		if (trigoDisponible > 0) {
+			trigoDisponible--;
+			double masa = 0.2;
+			double vel = 60.0;
+			double velAjustada = 40.0;
+			dispararProyectil(pos, dir, masa, vel, velAjustada, 5, Vector4(1.0, 1.0, 0.1, 1.0));
+			
+		}
+		
+		display_text = "Trigo disponible: " + std::to_string(trigoDisponible);
+		break;
+	}
+
+	
 	default:
 		break;
 	}
 }
+
 
 void keyRelease(unsigned char key, const PxTransform& camera)
 {
@@ -293,3 +375,53 @@ int main(int, const char* const*)
 
 	return 0;
 }
+
+//Otros tipos de disparos por si acaso
+
+//case '1': //Pistola
+//{
+//	double masa = 0.008;
+//	double vel = 380.0;
+//	double velAjustada = 100.0;
+//	dispararProyectil(pos, dir, masa, vel, velAjustada, 1, Vector4(1.0, 0.0, 0.0, 1.0));
+//	break;
+//}
+//
+//case '2': //Bala de ca��n ligera
+//{
+//	double masa = 6.0;
+//	double vel = 250.0;
+//	double velAjustada = 60.0;
+//	dispararProyectil(pos, dir, masa, vel, velAjustada, 2, Vector4(0.0, 0.0, 1.0, 1.0));
+//	break;
+//}
+//
+//case '3': //Proyectil de tanque 
+//{
+//	double masa = 20.0;
+//	double vel = 1500.0;
+//	double velAjustada = 120.0;
+//	dispararProyectil(pos, dir, masa, vel, velAjustada, 3, Vector4(0.5, 0.5, 0.5, 1.0));
+//	break;
+//}
+//
+//case '4': // Laser 
+//{
+//	double masa = 0.000001;
+//	double vel = 3e8;
+//	double velAjustada = 300.0;
+//	double size = 0.05;           // Muy pequeño
+//	Particle* laser = new Particle(
+//		pos,
+//		dir * velAjustada,
+//		Vector3(0, 0, 0),
+//		3.0,
+//		masa,
+//		1.0,
+//		1,
+//		Vector4(1.0, 1.0, 0.0, 1.0),
+//		size
+//	);
+//	proyectiles.push_back(laser);
+//	break;
+//}

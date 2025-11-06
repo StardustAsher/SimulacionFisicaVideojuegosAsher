@@ -2,14 +2,13 @@
 #include <algorithm> // std::min, std::max
 #include "ParticleForceRegistry.h"
 #include "GravityForceGenerator.h"
+#include "WindForceGenerator.h"
 #include <iostream>
 
 extern ParticleForceRegistry forceRegistry;
 extern GravityForceGenerator* gravityEarth;
 extern GravityForceGenerator* gravityMoon;
-
-
-
+extern WindForceGenerator* vientoSuave;
 
 // Constructor
 ParticleGenerator::ParticleGenerator(Vector3 position,
@@ -25,7 +24,7 @@ ParticleGenerator::ParticleGenerator(Vector3 position,
     double colorVar,
     double alphaVar,
     double sizeVar,
-    double speedVar,double varx,double vary,double varz)
+    double speedVar,double varx,double vary,double varz, bool wind)
     : position(position),
     meanVelocity(meanVelocity),
     emitRate(emitRate),
@@ -39,7 +38,7 @@ ParticleGenerator::ParticleGenerator(Vector3 position,
     alphaVar(alphaVar),
     sizeVar(sizeVar),
     speedVar(speedVar),
-	gravityType(gravity),varx(varx), vary(vary), varz(varz)
+	gravityType(gravity),varx(varx), vary(vary), varz(varz), wind(wind)
 {
 }
 
@@ -69,6 +68,10 @@ void ParticleGenerator::emitParticle(std::vector<Particle*>& particleList) {
         // Registrar gravedad según tipo
         if (gravityType == 1) forceRegistry.add(p, gravityEarth);
         else if (gravityType == 2) forceRegistry.add(p, gravityMoon);
+
+        if (wind) {
+            forceRegistry.add(p, vientoSuave);
+		}
     
 
     }

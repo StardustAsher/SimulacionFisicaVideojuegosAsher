@@ -17,6 +17,7 @@
     <ClCompile Include="GravityForceGenerator.cpp" />
     <ClCompile Include="ParticleForceRegistry.cpp" />
     <ClCompile Include="Trigo.cpp" />
+    <ClCompile Include="WindForceGenerator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="core.hpp" />
@@ -35,6 +36,7 @@
     <ClInclude Include="GravityForceGenerator.h" />
     <ClInclude Include="ParticleForceRegistry.h" />
     <ClInclude Include="Trigo.h" />
+    <ClInclude Include="WindForceGenerator.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Render">

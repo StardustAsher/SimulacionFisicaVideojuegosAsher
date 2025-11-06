@@ -29,8 +29,9 @@ Trigo::Trigo(Vector3 posBase) : posicionBase(posBase) {
         0.1,                               // variación de color leve
         0.1,                               // variación de opacidad
         0.1,                               // variación de tamaño
-        0.5,                                 // variación de tamaño
-        0.5, 0.0, 0.5                 // varx, vary, varz
+        0.5,                               // variación de tamaño
+        0.5, 0.0, 0.5,                     // varx, vary, varz
+		true                                // con viento
     );
     particulas->setActive(false);
 }
@@ -103,3 +104,27 @@ void Trigo::update(double t) {
             particulas->setActive(true);
     }
 }
+bool Trigo::estaMaduro() const {
+    return madurando && progresoMaduracion >= 1.0f;
+}
+void Trigo::reset() {
+    // Liberar memoria actual
+    for (auto& item : tallos) {
+        if (item) {
+            DeregisterRenderItem(item); // si tu motor lo usa
+            delete item->transform;
+            delete item;
+        }
+    }
+    tallos.clear();
+
+    if (particulas) {
+        delete particulas;
+        particulas = nullptr;
+    }
+
+    // Reiniciar el objeto a su estado inicial llamando de nuevo al constructor
+    *this = Trigo(posicionBase);
+}
+
+

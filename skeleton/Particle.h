@@ -20,6 +20,10 @@ public:
 
 	double getMass() const { return mass; }
     double getInvMass() const { return mass > 0.0 ? 1.0 / mass : 0.0; }
+	Vector3 getPositionVector() const {
+		return position.p; 
+	}
+	Vector3 getVelocity() const { return velocity; }
 	
 
 private:

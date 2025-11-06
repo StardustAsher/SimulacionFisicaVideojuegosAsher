@@ -20,7 +20,8 @@ public:
         double colorVar = 0.0,
         double alphaVar = 0.0,
         double sizeVar = 0.0,
-        double speedVar = 0.0,double varx = 0.0,double vary = 0.0,double varz = 0.0);
+        double speedVar = 0.0,double varx = 0.0,double vary = 0.0,double varz = 0.0,
+        bool wind = false);
 
     // Actualiza el emisor y genera nuevas partículas
     void update(double t, std::vector<Particle*>& particleList);
@@ -37,7 +38,7 @@ private:
     Vector4 baseColor;
     double baseSize;
     int gravityType; // 0 = none, 1 = earth, 2 = moon
-
+	bool wind;
     // Control de variabilidad
     bool useGaussian;
     double variance;     // variación direccional básica

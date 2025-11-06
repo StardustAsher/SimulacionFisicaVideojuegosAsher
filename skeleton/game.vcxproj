@@ -265,6 +265,7 @@
     <ClCompile Include="Render\Render.cpp" />
     <ClCompile Include="Trigo.cpp" />
     <ClCompile Include="Vector3D.cpp" />
+    <ClCompile Include="WindForceGenerator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="callbacks.hpp" />
@@ -279,6 +280,7 @@
     <ClInclude Include="Render\Render.h" />
     <ClInclude Include="Trigo.h" />
     <ClInclude Include="Vector3D.h" />
+    <ClInclude Include="WindForceGenerator.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

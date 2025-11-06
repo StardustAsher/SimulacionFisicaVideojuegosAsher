@@ -39,7 +39,7 @@ ContactReportCallback gContactReportCallback;
 ParticleForceRegistry forceRegistry;
 extern GravityForceGenerator* gravityEarth = new GravityForceGenerator(Vector3(0.0f, -9.8f, 0.0f));
 extern GravityForceGenerator* gravityMoon = new GravityForceGenerator(Vector3(0.0f, -1.6f, 0.0f));
-extern GravityForceGenerator* gravityNone = new GravityForceGenerator(Vector3(0.0f, 0.0f, 0.0f));
+
 
 std::vector<Particle*> proyectiles;
 
@@ -184,7 +184,7 @@ void cleanupPhysics(bool interactive)
 {
 	PX_UNUSED(interactive);
 
-	// 1. Limpieza de fuerzas globales
+
 	forceRegistry.clear();
 
 	delete gravityEarth;
@@ -192,21 +192,18 @@ void cleanupPhysics(bool interactive)
 	gravityEarth = nullptr;
 	gravityMoon = nullptr;
 
-	// 2. Borrar emisores de agua
+
 	for (auto& e : emisores)
 		delete e;
 	emisores.clear();
 	tiempoRestanteEmisor.clear();
 
-	// 3. Borrar cultivos (cada Trigo limpia sus tallos y partículas internas)
 	for (auto& t : cultivos)
 		delete t;
 	cultivos.clear();
 
-	// 4. Borrar posibles RenderItems adicionales
 	plantas.clear();
 
-	// 5. Liberar PhysX correctamente
 	if (gScene) {
 		gScene->release();
 		gScene = nullptr;
@@ -232,14 +229,13 @@ void cleanupPhysics(bool interactive)
 		gFoundation = nullptr;
 	}
 
-	// 6. Limpieza opcional de texto o variables globales
 	display_text.clear();
 }
 
 
 
 // ============================================================
-// Colisiones (no usado)
+// Colisiones 
 // ============================================================
 void onCollision(physx::PxActor* actor1, physx::PxActor* actor2)
 {

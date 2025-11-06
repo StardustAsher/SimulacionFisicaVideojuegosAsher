@@ -7,7 +7,7 @@
 extern ParticleForceRegistry forceRegistry;
 extern GravityForceGenerator* gravityEarth;
 extern GravityForceGenerator* gravityMoon;
-extern GravityForceGenerator* gravityNone;
+
 
 
 
@@ -60,10 +60,6 @@ void ParticleGenerator::emitParticle(std::vector<Particle*>& particleList) {
         Vector4 color = randomColor();
         double size = randomSize();
 
-        std::cout << "Emit: meanVelocity.y=" << meanVelocity.y
-            << " final vel.y=" << vel.y
-            << " gravityType=" << gravityType << std::endl;
-
         vel = (meanVelocity + vel) * (1.0 + speedVar * uniform(generator));
 
         // Crear partícula 
@@ -73,7 +69,7 @@ void ParticleGenerator::emitParticle(std::vector<Particle*>& particleList) {
         // Registrar gravedad según tipo
         if (gravityType == 1) forceRegistry.add(p, gravityEarth);
         else if (gravityType == 2) forceRegistry.add(p, gravityMoon);
-        else forceRegistry.add(p, gravityNone);
+    
 
     }
     

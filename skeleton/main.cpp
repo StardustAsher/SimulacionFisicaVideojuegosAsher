@@ -332,9 +332,9 @@ void keyPress(unsigned char key, const PxTransform& camera)
 	{
 		if (trigoDisponible > 0) {
 			trigoDisponible--;
-			double masa = 0.2;
-			double vel = 60.0;
-			double velAjustada = 40.0;
+			double masa = 0.008;
+			double vel = 380.0;
+			double velAjustada = 30.0;
 			dispararProyectil(pos, dir, masa, vel, velAjustada, 5, Vector4(1.0, 1.0, 0.1, 1.0));
 			
 		}

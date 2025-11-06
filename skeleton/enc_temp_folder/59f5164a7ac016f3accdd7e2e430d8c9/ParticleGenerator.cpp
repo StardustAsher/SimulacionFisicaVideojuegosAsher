@@ -59,7 +59,11 @@ void ParticleGenerator::emitParticle(std::vector<Particle*>& particleList) {
         Vector4 color = randomColor();
         double size = randomSize();
 
-        vel = (meanVelocity + vel) * (1.0 + speedVar * uniform(generator));
+        double factor = 1.0 + speedVar * uniform(generator);
+        if (factor < 0.0) factor = 0.0; 
+        vel = (meanVelocity + vel) * factor;
+
+   
 
         // Crear partícula 
         Particle* p = new Particle(position, vel, Vector3(0, 0, 0), particleLifetime, 10.0, 0.99, shape, color, size);

@@ -24,7 +24,8 @@ public:
 
     // Actualiza el emisor y genera nuevas partículas
     void update(double t, std::vector<Particle*>& particleList);
-
+	void setActive(bool isActive) { active = isActive; }
+	bool isActive() const { return active; }
 private:
     // Propiedades base
     Vector3 position;
@@ -48,6 +49,7 @@ private:
 	double varx, vary, varz; // variación por componente
 
     double timeAccumulator = 0.0;
+    bool active = true;
 
     // Distribuciones aleatorias
     std::default_random_engine generator;

@@ -1,12 +1,11 @@
 #include <ctype.h>
-
 #include <PxPhysicsAPI.h>
-
 #include <vector>
-#include "Vector3D.h"
 #include <chrono>
 #include <thread>
+#include <iostream>
 
+#include "Vector3D.h"
 #include "core.hpp"
 #include "RenderUtils.hpp"
 #include "callbacks.hpp"
@@ -14,55 +13,51 @@
 #include "ParticleGenerator.h"
 #include "ParticleForceRegistry.h"
 #include "GravityForceGenerator.h"
-
-
-#include <iostream>
+#include "Trigo.h" // Nueva clase
 
 std::string display_text = "This is a test";
 Particle* p = NULL;
+
 std::vector<ParticleGenerator*> emisores;
+std::vector<double> tiempoRestanteEmisor;
+std::vector<RenderItem*> plantas;
+std::vector<Trigo*> cultivos; // Vector de plantas de trigo
 
 using namespace physx;
 
 PxDefaultAllocator		gAllocator;
 PxDefaultErrorCallback	gErrorCallback;
 
-PxFoundation*			gFoundation = NULL;
-PxPhysics*				gPhysics	= NULL;
-
-
-PxMaterial*				gMaterial	= NULL;
-
-PxPvd*                  gPvd        = NULL;
-
-PxDefaultCpuDispatcher*	gDispatcher = NULL;
-PxScene*				gScene      = NULL;
+PxFoundation* gFoundation = NULL;
+PxPhysics* gPhysics = NULL;
+PxMaterial* gMaterial = NULL;
+PxPvd* gPvd = NULL;
+PxDefaultCpuDispatcher* gDispatcher = NULL;
+PxScene* gScene = NULL;
 ContactReportCallback gContactReportCallback;
 
-extern ParticleForceRegistry forceRegistry;
+ParticleForceRegistry forceRegistry;
 extern GravityForceGenerator* gravityEarth = new GravityForceGenerator(Vector3(0.0f, -9.8f, 0.0f));
 extern GravityForceGenerator* gravityMoon = new GravityForceGenerator(Vector3(0.0f, -1.6f, 0.0f));
-
+extern GravityForceGenerator* gravityNone = new GravityForceGenerator(Vector3(0.0f, 0.0f, 0.0f));
 
 std::vector<Particle*> proyectiles;
 
 
-// Initialize physics engine
+// ============================================================
+// Inicialización del motor de física
+// ============================================================
 void initPhysics(bool interactive)
 {
 	PX_UNUSED(interactive);
 
 	gFoundation = PxCreateFoundation(PX_FOUNDATION_VERSION, gAllocator, gErrorCallback);
-
 	gPvd = PxCreatePvd(*gFoundation);
 	PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate(PVD_HOST, 5425, 10);
-	gPvd->connect(*transport,PxPvdInstrumentationFlag::eALL);
-
-	gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, PxTolerancesScale(),true,gPvd);
-
+	gPvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
+	gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, PxTolerancesScale(), true, gPvd);
 	gMaterial = gPhysics->createMaterial(0.5f, 0.5f, 0.6f);
 
-	// For Solid Rigids +++++++++++++++++++++++++++++++++++++
 	PxSceneDesc sceneDesc(gPhysics->getTolerancesScale());
 	sceneDesc.gravity = PxVec3(0.0f, -9.8f, 0.0f);
 	gDispatcher = PxDefaultCpuDispatcherCreate(2);
@@ -71,65 +66,76 @@ void initPhysics(bool interactive)
 	sceneDesc.simulationEventCallback = &gContactReportCallback;
 	gScene = gPhysics->createScene(sceneDesc);
 
+	// Crear 3 parcelas de tierra + plantas de trigo
+	for (int i = 0; i < 3; i++) {
+		float x = i * 10.0f - 10.0f;
+		float y = 0.0f;
+		float z = 0.0f;
+
+		// Tierra
+		PxShape* tierraShape = gPhysics->createShape(PxBoxGeometry(4.0f, 0.5f, 4.0f), *gMaterial);
+		PxTransform* tierraTransform = new PxTransform(PxVec3(x, y, z));
+		RenderItem* tierraItem = new RenderItem(tierraShape, tierraTransform, Vector4(0.4f, 0.25f, 0.1f, 1.0f));
+		RegisterRenderItem(tierraItem);
 	
 
-	//////Esfera
-	//PxShape* sphereShape = gPhysics->createShape(PxSphereGeometry(2.0f), *gMaterial);
-	//PxTransform* sphereTransform = new PxTransform(PxVec3(0.0f, 0.0f, 0.0f));
-	//Vector3 color = Vector3(0.0f, 0.0f, 0.0f); 
-	//
-	//RenderItem* sphereRenderItem = new RenderItem(sphereShape, sphereTransform, Vector4(color.x, color.y, color.z, 1.0f));
+		// Crear planta de trigo encima
+		Trigo* planta = new Trigo(Vector3(x, y + 0.5f, z));
+		cultivos.push_back(planta);
+	}
 
-	//RegisterRenderItem(sphereRenderItem);
+	// Crear irrigadores (emisores de agua)
+	std::vector<Vector3> posicionesBoquillas;
+	for (int i = 0; i < 3; i++) {
+		float x = i * 10.0f - 10.0f;
+		float y = 10.0f;
+		float z = 0.0f;
 
-	ParticleGenerator* water = new ParticleGenerator(
-		Vector3(0, 10, 0),        // posición de la boquilla
-		Vector3(0, 2, 25),       // velocidad media (ligeramente hacia arriba y adelante)
-		1,                       // gravedad terrestre
-		100,                     // emisión rápida (chorro denso)
-		2.0,                     // vida útil
-		2,                       // cubo
-		Vector4(0.3, 0.5, 1.0, 1.0), // azul 
-		1,                     // tamaño base
-		false,                 // sin gaussiana (más estable)
-		0.1,                   // var
-		0.2,                   // colorVar
-		0.1,                   // alphaVar
-		0.6,                   // sizeVar
-		0.1,                   // speedVar
-		0.2,                   // varX
-		0.1,                   // varY
-		0.4                    // varZ
-	);
+		PxShape* boquillaShape = gPhysics->createShape(PxBoxGeometry(1.0f, 1.0f, 1.0f), *gMaterial);
+		PxTransform* boquillaTransform = new PxTransform(PxVec3(x, y, z));
+		RenderItem* boquillaItem = new RenderItem(boquillaShape, boquillaTransform, Vector4(0.2f, 0.2f, 0.8f, 1.0f));
+		RegisterRenderItem(boquillaItem);
 
-	emisores.push_back(water);
+		posicionesBoquillas.push_back(Vector3(x, y, z));
+	}
 
-	//EsferasVector
-	
-	/*Vector3D posicionEsfera1 = Vector3D(10.0f, 0.0f, 0.0f);
-	Vector3D posicionEsfera2 = Vector3D(0.0f, 10.0f, 0.0f);
-	Vector3D posicionEsfera3 = Vector3D(0.0f, 0.0f, 10.0f);
-
-	RenderItem* esfera1 = new RenderItem(sphereShape, new PxTransform(PxVec3(posicionEsfera1.x, posicionEsfera1.y, posicionEsfera1.z)), Vector4(1.0f, 0.0f, 0.0f, 1.0f));
-	RegisterRenderItem(esfera1);
-	RenderItem* esfera2 = new RenderItem(sphereShape, new PxTransform(PxVec3(posicionEsfera2.x, posicionEsfera2.y, posicionEsfera2.z)), Vector4(0.0f, 1.0f, 0.0f, 1.0f));
-	RegisterRenderItem(esfera2);
-	RenderItem* esfera3 = new RenderItem(sphereShape, new PxTransform(PxVec3(posicionEsfera3.x, posicionEsfera3.y, posicionEsfera3.z)), Vector4(0.0f, 0.0f, 1.0f, 1.0f));
-	RegisterRenderItem(esfera3);*/
-
+	for (int i = 0; i < 3; i++) {
+		ParticleGenerator* irrigador = new ParticleGenerator(
+			posicionesBoquillas[i],
+			Vector3(0, -10, 0), // hacia abajo
+			1,
+			50,
+			0.3,
+			2,
+			Vector4(0.1, 0.3, 1.0, 1.0),
+			0.2,
+			false,
+			0.0,
+			0.1,
+			0.3,
+			0.1,
+			0.1,
+			2.0,
+			0.0,
+			2.0
+		);
+		irrigador->setActive(false);
+		emisores.push_back(irrigador);
+		tiempoRestanteEmisor.push_back(0.0);
+	}
 }
 
-// Function to configure what happens in each step of physics
-// interactive: true if the game is rendering, false if it offline
-// t: time passed since last call in milliseconds
+
+// ============================================================
+// Step de física (por frame)
+// ============================================================
 void stepPhysics(bool interactive, double t)
 {
 	PX_UNUSED(interactive);
 
-	// Actualizar fuerzas
 	forceRegistry.updateForces(t);
 
-	// Integrar partículas existentes
+	// Integrar partículas existentes (proyectiles)
 	for (int i = proyectiles.size() - 1; i >= 0; --i) {
 		Particle* pr = proyectiles[i];
 		if (pr != nullptr) {
@@ -141,139 +147,142 @@ void stepPhysics(bool interactive, double t)
 		}
 	}
 
-	// Generadores de partículas
-	for (auto& e : emisores)
-		e->update(t, proyectiles); 
+	// Actualizar emisores de agua (irrigadores)
+	for (int i = 0; i < emisores.size(); i++) {
+		if (emisores[i]->isActive()) {
+			emisores[i]->update(t, proyectiles);
+			tiempoRestanteEmisor[i] -= t;
+			if (tiempoRestanteEmisor[i] <= 0.0) {
+				emisores[i]->setActive(false);
+				tiempoRestanteEmisor[i] = 0.0;
+			}
+		}
+	}
 
+	// Actualizar crecimiento del trigo (lógica visual) y sus generadores de partículas
+	for (auto& trigo : cultivos) {
+		// Actualiza la lógica de crecimiento / color del trigo
+		trigo->update(t);
+
+		// Actualiza el ParticleGenerator del trigo, pasando el vector global de proyectiles
+		ParticleGenerator* gen = trigo->getParticleGenerator();
+		if (gen && gen->isActive()) {
+			gen->update(t, proyectiles);
+		}
+	}
 
 	std::this_thread::sleep_for(std::chrono::microseconds(10));
 }
 
 
-// Function to clean data
-// Add custom code to the begining of the function
+
+
+// ============================================================
+// Limpieza
+// ============================================================
 void cleanupPhysics(bool interactive)
 {
 	PX_UNUSED(interactive);
 
+	// 1. Limpieza de fuerzas globales
 	forceRegistry.clear();
 
 	delete gravityEarth;
 	delete gravityMoon;
+	gravityEarth = nullptr;
+	gravityMoon = nullptr;
 
-	for (auto& e : emisores) delete e;
+	// 2. Borrar emisores de agua
+	for (auto& e : emisores)
+		delete e;
 	emisores.clear();
+	tiempoRestanteEmisor.clear();
 
-	gScene->release();
-	gDispatcher->release();
-	gPhysics->release();
-	PxPvdTransport* transport = gPvd->getTransport();
-	gPvd->release();
-	transport->release();
-	gFoundation->release();
+	// 3. Borrar cultivos (cada Trigo limpia sus tallos y partículas internas)
+	for (auto& t : cultivos)
+		delete t;
+	cultivos.clear();
+
+	// 4. Borrar posibles RenderItems adicionales
+	plantas.clear();
+
+	// 5. Liberar PhysX correctamente
+	if (gScene) {
+		gScene->release();
+		gScene = nullptr;
+	}
+	if (gDispatcher) {
+		gDispatcher->release();
+		gDispatcher = nullptr;
+	}
+	if (gPhysics) {
+		gPhysics->release();
+		gPhysics = nullptr;
+	}
+
+	if (gPvd) {
+		PxPvdTransport* transport = gPvd->getTransport();
+		gPvd->release();
+		if (transport) transport->release();
+		gPvd = nullptr;
+	}
+
+	if (gFoundation) {
+		gFoundation->release();
+		gFoundation = nullptr;
+	}
+
+	// 6. Limpieza opcional de texto o variables globales
+	display_text.clear();
 }
 
 
 
-
+// ============================================================
+// Colisiones (no usado)
+// ============================================================
 void onCollision(physx::PxActor* actor1, physx::PxActor* actor2)
 {
 	PX_UNUSED(actor1);
 	PX_UNUSED(actor2);
 }
 
-void dispararProyectil(Vector3 pos, Vector3 dir, double masa, double vel, double velAjustada,
-	int shape = 1, Vector4 color = Vector4(1.0, 0.0, 0.0, 1.0))
-{
-	dir.normalize();
 
-	double energia = 0.5 * masa * vel * vel;
-	double masaAjustada = (2.0 * energia) / (velAjustada * velAjustada);
-	Vector3 vectorVel = dir * velAjustada;
-
-	double size = 0.5; // Tamaño por defecto
-
-	Particle* nuevo = new Particle(pos, vectorVel, Vector3(0, 0, 0), 10.0, masaAjustada, 0.99, shape, color, size);
-	proyectiles.push_back(nuevo);
-
-	
-	forceRegistry.add(nuevo, gravityEarth);
-}
-
-
-
+// ============================================================
+// Teclas
+// ============================================================
 void keyPress(unsigned char key, const PxTransform& camera)
 {
-	Vector3 pos = camera.p;
-	Vector3 dir = -camera.q.getBasisVector2(); // Hacia delante
-	dir.normalize();
-
 	switch (toupper(key))
 	{
-	case '1': //Pistola
+	case '1':
+	case '2':
+	case '3':
 	{
-		double masa = 0.008;         
-		double vel = 380.0;           
-		double velAjustada = 100.0;   
-		dispararProyectil(pos, dir, masa, vel, velAjustada, 1, Vector4(1.0, 0.0, 0.0, 1.0));
+		int index = key - '1';
+		if (index >= 0 && index < emisores.size()) {
+			emisores[index]->setActive(true);
+			tiempoRestanteEmisor[index] = 2.0;
+			cultivos[index]->regar(); // activar crecimiento del trigo
+		}
 		break;
 	}
-
-	case '2': //Bala de cañón ligera
-	{
-		double masa = 6.0;            
-		double vel = 250.0;           
-		double velAjustada = 60.0;    
-		dispararProyectil(pos, dir, masa, vel, velAjustada, 2, Vector4(0.0, 0.0, 1.0, 1.0));
-		break;
-	}
-
-	case '3': //Proyectil de tanque 
-	{
-		double masa = 20.0;           
-		double vel = 1500.0;         
-		double velAjustada = 120.0;   
-		dispararProyectil(pos, dir, masa, vel, velAjustada, 3, Vector4(0.5, 0.5, 0.5, 1.0));
-		break;
-	}
-
-	case '4': // Láser 
-	{
-		double masa = 0.000001;
-		double vel = 3e8;
-		double velAjustada = 300.0;
-		double size = 0.05;           // Muy pequeño
-		Particle* laser = new Particle(
-			pos,
-			dir * velAjustada,
-			Vector3(0, 0, 0),
-			3.0,
-			masa,
-			1.0,
-			1,
-			Vector4(1.0, 1.0, 0.0, 1.0),
-			size
-		);
-		proyectiles.push_back(laser);
-		break;
-	}
-
-	case 'Q': //Partícula estática — solo cae
-	{
-		double masa = 1.0;            
-		double vel = 0.0;             // sin movimiento
-		double velAjustada = 0.0;     
-		dispararProyectil(pos, dir, masa, vel, velAjustada, 1, Vector4(0.0, 1.0, 0.0, 1.0));
-		break;
-	}
-
 	default:
 		break;
 	}
 }
 
+void keyRelease(unsigned char key, const PxTransform& camera)
+{
+	PX_UNUSED(key);
+	PX_UNUSED(camera);
+}
 
-int main(int, const char*const*)
+
+// ============================================================
+// Main
+// ============================================================
+int main(int, const char* const*)
 {
 #ifndef OFFLINE_EXECUTION 
 	extern void renderLoop();
@@ -281,8 +290,8 @@ int main(int, const char*const*)
 #else
 	static const PxU32 frameCount = 100;
 	initPhysics(false);
-	for(PxU32 i=0; i<frameCount; i++)
-		stepPhysics(false);
+	for (PxU32 i = 0; i < frameCount; i++)
+		stepPhysics(false, 0.016);
 	cleanupPhysics(false);
 #endif
 

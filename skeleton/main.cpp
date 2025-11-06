@@ -105,7 +105,7 @@ void initPhysics(bool interactive)
 			Vector3(0, -10, 0), // hacia abajo
 			1,
 			50,
-			0.3,
+			0.5,
 			2,
 			Vector4(0.1, 0.3, 1.0, 1.0),
 			0.2,

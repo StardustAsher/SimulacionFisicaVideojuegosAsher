@@ -16,21 +16,21 @@ Trigo::Trigo(Vector3 posBase) : posicionBase(posBase) {
     madurando = false;
 
     particulas = new ParticleGenerator(
-        posBase + Vector3(0, 1.0f, 0),     // posición inicial un poco elevada
+        posBase + Vector3(0, 1.0f, 0),     
 		Vector3(0, 5.0f, 0),              // velocidad inicial hacia arriba
         0,                                 // SIN gravedad (tipo 0 = sin registro en forceRegistry)
         20.0,                               // tasa de emisión (partículas por segundo)
-        0.5,                               // vida corta (0.5s)
+        0.5,                               // vida 
         2,                                 // forma cuadrada
-        Vector4(1.0f, 1.0f, 0.1f, 0.8f),   // color base dorado translúcido
-        0.1f,                              // tamaño base pequeño
+        Vector4(1.0f, 1.0f, 0.1f, 0.8f),   // color base
+        0.1f,                              // tamaño base 
         false,                             // sin gaussiano
         0.0,                              // varianza dir
         0.1,                               // variación de color leve
         0.1,                               // variación de opacidad
         0.1,                               // variación de tamaño
         0.5,                                 // variación de tamaño
-        0, 0.0, 0                  // varx, vary, varz
+        3, 0.0, 3                  // varx, vary, varz
     );
     particulas->setActive(false);
 }

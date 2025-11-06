@@ -18,8 +18,8 @@ public:
         accumulatedForce = {0, 0, 0};
     }
 
-    double getMass() const { return mass > 0 ? 1.0 / mass : 0.0; }
-    double getInvMass() const { return 1/mass; }
+	double getMass() const { return mass; }
+    double getInvMass() const { return mass > 0.0 ? 1.0 / mass : 0.0; }
 	
 
 private:

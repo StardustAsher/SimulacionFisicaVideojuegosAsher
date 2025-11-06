@@ -2,6 +2,7 @@
 #include <algorithm> // std::min, std::max
 #include "ParticleForceRegistry.h"
 #include "GravityForceGenerator.h"
+#include <iostream>
 
 extern ParticleForceRegistry forceRegistry;
 extern GravityForceGenerator* gravityEarth;
@@ -59,6 +60,10 @@ void ParticleGenerator::emitParticle(std::vector<Particle*>& particleList) {
         Vector4 color = randomColor();
         double size = randomSize();
 
+        std::cout << "Emit: meanVelocity.y=" << meanVelocity.y
+            << " final vel.y=" << vel.y
+            << " gravityType=" << gravityType << std::endl;
+
         vel = (meanVelocity + vel) * (1.0 + speedVar * uniform(generator));
 
         // Crear partícula 
@@ -85,6 +90,9 @@ Vector3 ParticleGenerator::randomVelocity() {
     double vx = meanVelocity.x + rnd(varx);
     double vy = meanVelocity.y + rnd(vary);
     double vz = meanVelocity.z + rnd(varz);
+
+
+
 
     return Vector3(vx, vy, vz);
 }

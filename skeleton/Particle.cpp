@@ -12,7 +12,7 @@ Particle::Particle(Vector3 pos, Vector3 vel, Vector3 a, double lt, double m, dou
 	lifeTime = lt;
 	damping = d;
 	if (m <= 0) mass = 0.0;
-	else mass = 1.0 / m;
+	else mass = m;
 	_shape = shape;
 	firstIntegrate = true;
 	accumulatedForce = Vector3(0.0f, 0.0f, 0.0f);
@@ -61,9 +61,11 @@ Particle::~Particle()
 
 void Particle::integrate(double t)
 {
-	acceleration = accumulatedForce / mass;
+	if (mass <= 0.0 || lifeTime <= 0.0) return;
 
-	
+	lifeTime -= t;
+
+	acceleration = accumulatedForce * getInvMass();
 	////Euler
 	//if (mass > 0.0 && lifeTime > 0.0) {
 
@@ -77,17 +79,14 @@ void Particle::integrate(double t)
 	//Euler semi-implicito
 	if(mass> 0.0 && lifeTime > 0.0 ) {
 		
-		lifeTime -= t;
-		prevPosition = position.p;
 		velocity = velocity * pow(damping, t) + acceleration * t;
 		position.p = position.p + velocity * t;
+
+		prevPosition = position.p;
 		firstIntegrate = false;
 		
 		
 	}
-
-	
-
 
 	//Verlet
 	/*else if (mass > 0.0 && lifeTime > 0.0 ) {
@@ -103,8 +102,6 @@ void Particle::integrate(double t)
 		prevPosition = currentPos;
 		position.p = newPos;
 	}*/
-
-	
 
 	ClearForce();
 

@@ -16,7 +16,7 @@ public:
         Vector4 baseColor = Vector4(1, 1, 1, 1),
 		double baseSize = 0.5,
         bool useGaussian = false,
-        double var = 1.0,
+        double var = 0.0,
         double colorVar = 0.0,
         double alphaVar = 0.0,
         double sizeVar = 0.0,

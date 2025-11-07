@@ -25,7 +25,6 @@ std::vector<double> tiempoRestanteEmisor;
 std::vector<RenderItem*> plantas;
 std::vector<Trigo*> cultivos; // Vector de plantas de trigo
 
-
 using namespace physx;
 
 PxDefaultAllocator		gAllocator;
@@ -43,14 +42,15 @@ ParticleForceRegistry forceRegistry;
 extern GravityForceGenerator* gravityEarth = new GravityForceGenerator(Vector3(0.0f, -9.8f, 0.0f));
 extern GravityForceGenerator* gravityMoon = new GravityForceGenerator(Vector3(0.0f, -1.6f, 0.0f));
 extern WindForceGenerator* vientoSuave = new WindForceGenerator(
-	Vector3(1.0, 0.0, 0.1),  // Dirección base
-	5.0                      //Fuerza base
+	Vector3(1.0, 0.0, 0.1),
+	5.0
 );
 
 std::vector<Particle*> proyectiles;
 
-
-
+// Variables globales para control de fuerzas
+bool gravedadActiva = true;
+bool vientoActivo = false;
 
 // ============================================================
 // Inicialización del motor de física
@@ -85,9 +85,8 @@ void initPhysics(bool interactive)
 		PxTransform* tierraTransform = new PxTransform(PxVec3(x, y, z));
 		RenderItem* tierraItem = new RenderItem(tierraShape, tierraTransform, Vector4(0.4f, 0.25f, 0.1f, 1.0f));
 		RegisterRenderItem(tierraItem);
-	
 
-		// Crear planta de trigo encima
+		// Planta de trigo
 		Trigo* planta = new Trigo(Vector3(x, y + 0.5f, z));
 		cultivos.push_back(planta);
 	}
@@ -110,81 +109,59 @@ void initPhysics(bool interactive)
 	for (int i = 0; i < 3; i++) {
 		ParticleGenerator* irrigador = new ParticleGenerator(
 			posicionesBoquillas[i],
-			Vector3(0, -10, 0), // hacia abajo
-			1,
-			50,
-			0.5,
-			2,
+			Vector3(0, -10, 0),
+			1, 50, 0.5, 2,
 			Vector4(0.1, 0.3, 1.0, 1.0),
-			0.2,
-			false,
-			0.0,
-			0.1,
-			0.3,
-			0.1,
-			0.1,
-			2.0,
-			0.0,
-			2.0
+			0.2, false, 0.0, 0.1, 0.3, 0.1, 0.1, 2.0, 0.0, 2.0
 		);
 		irrigador->setActive(false);
 		emisores.push_back(irrigador);
 		tiempoRestanteEmisor.push_back(0.0);
 	}
 }
+
+// ============================================================
+// Función para disparar proyectiles
+// ============================================================
 void dispararProyectil(const Vector3& pos, const Vector3& dirOriginal, double masa, double vel, double velAjustada, int tipo, const Vector4& color)
 {
 	Vector3 dir = dirOriginal;
 	dir.normalize();
 	double energia = 0.5 * masa * vel * vel;
 
-
 	double masaAjustada = (2.0 * energia) / (velAjustada * velAjustada);
-
-	// Velocidad inicial ajustada
 	Vector3 vectorVel = dir * velAjustada;
 
 	double size = 0.5;
 	switch (tipo)
 	{
-	case 1: size = 0.2; break;  // Pistola
-	case 2: size = 0.4; break;  // Bala de cañón ligera
-	case 3: size = 0.8; break;  // Tanque
-	case 4: size = 0.05; break; // Láser
-	case 5: size = 0.3; break;  // Trigo 
+	case 1: size = 0.2; break;
+	case 2: size = 0.4; break;
+	case 3: size = 0.8; break;
+	case 4: size = 0.05; break;
+	case 5: size = 0.3; break;
 	default: break;
 	}
 
-	// Crear proyectil con la masa ajustada
-	Particle* nuevo = new Particle(
-		pos,                   // Posición inicial
-		vectorVel,              // Velocidad ajustada
-		Vector3(0.0, 0.0, 0.0),                   // Aceleración inicial
-		10.0,                   // Tiempo de vida
-		masaAjustada,           // Masa ajustada a la escala
-		0.99,                   // Damping
-		2,                      // shape (cubo)
-		color,                  // Color 
-		size                    // Tamaño 
-	);
-
-	// Añadir al vector global de proyectiles
+	Particle* nuevo = new Particle(pos, vectorVel, Vector3(0.0, 0.0, 0.0), 10.0, masaAjustada, 0.99, 2, color, size);
 	proyectiles.push_back(nuevo);
-
 
 	forceRegistry.add(nuevo, gravityEarth);
 }
 
 // ============================================================
-// Step de física (por frame)
+// Step de física
 // ============================================================
 void stepPhysics(bool interactive, double t)
 {
 	PX_UNUSED(interactive);
 
-	forceRegistry.updateForces(t);
+	// Solo aplica fuerzas activas
+	ForceGenerator* gravedadActual = gravedadActiva ? gravityEarth : gravityMoon;
+	forceRegistry.updateForcesConditional(t, true, vientoActivo, gravedadActual, vientoSuave);
 
-	// Integrar partículas existentes (proyectiles)
+
+	// Integrar partículas
 	for (int i = proyectiles.size() - 1; i >= 0; --i) {
 		Particle* pr = proyectiles[i];
 		if (pr != nullptr) {
@@ -196,7 +173,7 @@ void stepPhysics(bool interactive, double t)
 		}
 	}
 
-	// Actualizar emisores de agua (irrigadores)
+	// Actualizar emisores
 	for (int i = 0; i < emisores.size(); i++) {
 		if (emisores[i]->isActive()) {
 			emisores[i]->update(t, proyectiles);
@@ -208,12 +185,9 @@ void stepPhysics(bool interactive, double t)
 		}
 	}
 
-	// Actualizar crecimiento del trigo (lógica visual) y sus generadores de partículas
+	// Actualizar trigo
 	for (auto& trigo : cultivos) {
-		// Actualiza la lógica de crecimiento / color del trigo
 		trigo->update(t);
-
-		// Actualiza el ParticleGenerator del trigo
 		ParticleGenerator* gen = trigo->getParticleGenerator();
 		if (gen && gen->isActive()) {
 			gen->update(t, proyectiles);
@@ -223,9 +197,6 @@ void stepPhysics(bool interactive, double t)
 	std::this_thread::sleep_for(std::chrono::microseconds(10));
 }
 
-
-
-
 // ============================================================
 // Limpieza
 // ============================================================
@@ -233,65 +204,45 @@ void cleanupPhysics(bool interactive)
 {
 	PX_UNUSED(interactive);
 
-
 	forceRegistry.clear();
 
 	delete gravityEarth;
 	delete gravityMoon;
+	delete vientoSuave;
 	gravityEarth = nullptr;
 	gravityMoon = nullptr;
+	vientoSuave = nullptr;
 
-
-	for (auto& e : emisores)
-		delete e;
+	for (auto& e : emisores) delete e;
 	emisores.clear();
 	tiempoRestanteEmisor.clear();
 
-	for (auto& t : cultivos)
-		delete t;
+	for (auto& t : cultivos) delete t;
 	cultivos.clear();
 
 	plantas.clear();
 
-	if (gScene) {
-		gScene->release();
-		gScene = nullptr;
-	}
-	if (gDispatcher) {
-		gDispatcher->release();
-		gDispatcher = nullptr;
-	}
-	if (gPhysics) {
-		gPhysics->release();
-		gPhysics = nullptr;
-	}
-
+	if (gScene) gScene->release();
+	if (gDispatcher) gDispatcher->release();
+	if (gPhysics) gPhysics->release();
 	if (gPvd) {
 		PxPvdTransport* transport = gPvd->getTransport();
 		gPvd->release();
 		if (transport) transport->release();
-		gPvd = nullptr;
 	}
-
-	if (gFoundation) {
-		gFoundation->release();
-		gFoundation = nullptr;
-	}
+	if (gFoundation) gFoundation->release();
 
 	display_text.clear();
 }
 
-
-
 // ============================================================
-// Colisiones 
+// Colisiones
 // ============================================================
 void onCollision(physx::PxActor* actor1, physx::PxActor* actor2)
 {
 	PX_UNUSED(actor1);
 	PX_UNUSED(actor2);
 }
-
 
 // ============================================================
 // Teclas
@@ -312,7 +263,7 @@ void keyPress(unsigned char key, const PxTransform& camera)
 		if (index >= 0 && index < emisores.size()) {
 			emisores[index]->setActive(true);
 			tiempoRestanteEmisor[index] = 2.0;
-			cultivos[index]->regar(); // activar crecimiento del trigo
+			cultivos[index]->regar();
 		}
 		break;
 	}
@@ -336,26 +287,32 @@ void keyPress(unsigned char key, const PxTransform& camera)
 			double vel = 380.0;
 			double velAjustada = 30.0;
 			dispararProyectil(pos, dir, masa, vel, velAjustada, 5, Vector4(1.0, 1.0, 0.1, 1.0));
-			
 		}
-		
 		display_text = "Trigo disponible: " + std::to_string(trigoDisponible);
 		break;
 	}
-
-	
+	case 'Z': // Activar/desactivar gravedad
+	{
+		gravedadActiva = !gravedadActiva;
+		std::cout << (gravedadActiva ? "Gravedad activada" : "Gravedad desactivada") << std::endl;
+		break;
+	}
+	case 'X': // Activar/desactivar viento
+	{
+		vientoActivo = !vientoActivo;
+		std::cout << (vientoActivo ? "Viento activado" : "Viento desactivado") << std::endl;
+		break;
+	}
 	default:
 		break;
 	}
 }
-
 
 void keyRelease(unsigned char key, const PxTransform& camera)
 {
 	PX_UNUSED(key);
 	PX_UNUSED(camera);
 }
-
 
 // ============================================================
 // Main
@@ -375,6 +332,7 @@ int main(int, const char* const*)
 
 	return 0;
 }
+
 
 //Otros tipos de disparos por si acaso
 

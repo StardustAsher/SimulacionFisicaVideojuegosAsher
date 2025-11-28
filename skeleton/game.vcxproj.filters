@@ -18,6 +18,9 @@
     <ClCompile Include="ParticleForceRegistry.cpp" />
     <ClCompile Include="Trigo.cpp" />
     <ClCompile Include="WindForceGenerator.cpp" />
+    <ClCompile Include="SpringForceGenerator.cpp" />
+    <ClCompile Include="AnchoredSpringForceGenerator.cpp" />
+    <ClCompile Include="BungeeForceGenerator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="core.hpp" />
@@ -37,6 +40,10 @@
     <ClInclude Include="ParticleForceRegistry.h" />
     <ClInclude Include="Trigo.h" />
     <ClInclude Include="WindForceGenerator.h" />
+    <ClInclude Include="SpringForceGenerator.h" />
+    <ClInclude Include="TimeForceGenerator.h" />
+    <ClInclude Include="AnchoredSpringForceGenerator.h" />
+    <ClInclude Include="BungeeForceGenerator.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Render">

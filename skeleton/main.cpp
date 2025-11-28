@@ -14,7 +14,10 @@
 #include "ParticleForceRegistry.h"
 #include "GravityForceGenerator.h"
 #include "WindForceGenerator.h"
-#include "Trigo.h" // Nueva clase
+#include "Trigo.h" 
+#include "AnchoredSpringForceGenerator.h"
+#include "SpringForceGenerator.h"
+#include "TimeForceGenerator.h"
 
 int trigoDisponible = 10;
 std::string display_text = "Trigo disponible: " + std::to_string(trigoDisponible);
@@ -24,6 +27,8 @@ std::vector<ParticleGenerator*> emisores;
 std::vector<double> tiempoRestanteEmisor;
 std::vector<RenderItem*> plantas;
 std::vector<Trigo*> cultivos; // Vector de plantas de trigo
+SpringForceGenerator* ejemploSpring = nullptr;
+AnchoredSpringForceGenerator* ejemploAnchoredSpring = nullptr;
 
 using namespace physx;
 
@@ -74,6 +79,58 @@ void initPhysics(bool interactive)
 	sceneDesc.simulationEventCallback = &gContactReportCallback;
 	gScene = gPhysics->createScene(sceneDesc);
 
+
+	//Ejemplo muelle 1
+
+	Vector3 anchorPos(0.0f, 5.0f, 0.0f);
+
+	// crear la partícula 
+	Particle* particleMuella = new Particle(Vector3(0.0f, 3.0f, 0.0f), Vector3(0, 0, 0), Vector3(0, 0, 0), 100.0, 1.0, 0.99, 1, Vector4(1, 0, 0, 1), 0.3);
+
+	p = particleMuella; // para la f
+
+	// ancla
+	physx::PxShape* anchorShape = gPhysics->createShape(physx::PxBoxGeometry(0.2f, 0.2f, 0.2f), *gMaterial);
+	physx::PxTransform* anchorTransform = new physx::PxTransform(anchorPos);
+	RenderItem* anchorItem = new RenderItem(anchorShape, anchorTransform, Vector4(0.2, 0.8, 0.2, 1.0));
+	RegisterRenderItem(anchorItem);
+
+	// crear generador y registrarlo
+	AnchoredSpringForceGenerator* anchorSpring = new AnchoredSpringForceGenerator(anchorPos, 50.0 /*k*/, 2.0 /*rest len*/);
+	ejemploAnchoredSpring = anchorSpring;
+	forceRegistry.add(particleMuella, anchorSpring);
+
+	// Añadir gravedad
+	forceRegistry.add(particleMuella, gravityEarth);
+
+	proyectiles.push_back(particleMuella);
+
+
+	//Ejemplo muelle 2
+
+	// crear dos partículas
+	Particle* pA = new Particle(Vector3(-1.0, 10.0, 0.0), Vector3(0, 0, 0), Vector3(0, 0, 0), 100.0, 1.0, 0.99, 1, Vector4(0.0, 0.7, 1.0, 1.0), 0.25);
+	Particle* pB = new Particle(Vector3(1.0, 10.0, 0.0), Vector3(0, 0, 0), Vector3(0, 0, 0), 100.0, 1.0, 0.99, 1, Vector4(0.8, 0.4, 0.1, 1.0), 0.25);
+
+	SpringForceGenerator* springAB = new SpringForceGenerator(pB, 10.0 /*k*/, 2.0 /*rest*/);
+	SpringForceGenerator* springBA = new SpringForceGenerator(pA, 10.0, 2.0);
+
+	// Registrar ambas direcciones
+	forceRegistry.add(pA, springAB);
+	forceRegistry.add(pB, springBA);
+
+
+	//forceRegistry.add(pA, gravityEarth);
+	forceRegistry.add(pB, gravityEarth);
+
+	proyectiles.push_back(pA);
+	proyectiles.push_back(pB);
+
+
+
+
+	//JUEGO
+	/*
 	// Crear 3 parcelas de tierra + plantas de trigo
 	for (int i = 0; i < 3; i++) {
 		float x = i * 10.0f - 10.0f;
@@ -118,6 +175,7 @@ void initPhysics(bool interactive)
 		emisores.push_back(irrigador);
 		tiempoRestanteEmisor.push_back(0.0);
 	}
+	*/
 }
 
 // ============================================================
@@ -159,7 +217,7 @@ void stepPhysics(bool interactive, double t)
 	// Solo aplica fuerzas activas
 	ForceGenerator* gravedadActual = gravedadActiva ? gravityEarth : gravityMoon;
 	forceRegistry.updateForcesConditional(t, true, vientoActivo, gravedadActual, vientoSuave);
-
+	forceRegistry.removeExpired(t);
 
 	// Integrar partículas
 	for (int i = proyectiles.size() - 1; i >= 0; --i) {
@@ -301,6 +359,49 @@ void keyPress(unsigned char key, const PxTransform& camera)
 	{
 		vientoActivo = !vientoActivo;
 		std::cout << (vientoActivo ? "Viento activado" : "Viento desactivado") << std::endl;
+		break;
+	}
+	case '+':
+	{
+		if (ejemploSpring) {
+			double k = ejemploSpring->getK();
+			k *= 1.2;
+			ejemploSpring->setK(k);
+			std::cout << "k aumentado a " << k << std::endl;
+		}
+		if (ejemploAnchoredSpring) {
+			double k = ejemploAnchoredSpring->getK();
+			k *= 1.2;
+			ejemploAnchoredSpring->setK(k);
+			std::cout << "k aumentado a " << k << std::endl;
+		}
+
+		break;
+	}
+	case '-':
+	{
+		if (ejemploSpring) {
+			double k = ejemploSpring->getK();
+			k /= 1.2;
+			ejemploSpring->setK(k);
+			std::cout << "k reducido a " << k << std::endl;
+		}
+		if (ejemploAnchoredSpring) {
+			double k = ejemploAnchoredSpring->getK();
+			k /= 1.2;
+			ejemploAnchoredSpring->setK(k);
+			std::cout << "k reducido a " << k << std::endl;
+		}
+		break;
+	}
+	case 'F': // aplicar fuerza breve hacia +X
+	{
+		// fuerza constante de 200N durante 0.15s aplicada a la partículaMuella
+		Vector3 demoForce(500.0, 0.0, 0.0);
+		TimedForceGenerator* tfg = new TimedForceGenerator(demoForce, 0.15);
+		
+		forceRegistry.add(p, tfg); 
+		std::cout << "Fuerza temporal aplicada" << std::endl;
 		break;
 	}
 	default:

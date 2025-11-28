@@ -91,8 +91,6 @@ Vector3 ParticleGenerator::randomVelocity() {
     double vz = meanVelocity.z + rnd(varz);
 
 
-
-
     return Vector3(vx, vy, vz);
 }
 

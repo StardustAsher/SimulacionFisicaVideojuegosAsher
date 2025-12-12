@@ -3,10 +3,13 @@
 #include "RenderUtils.hpp"
 #include "ParticleGenerator.h"
 #include "Vector3D.h"
+#include <list>
 
 class Trigo {
 private:
-    std::vector<RenderItem*> tallos;
+
+    std::list<RenderItem*> tallos;
+    //std::vector<RenderItem*> tallos;
     ParticleGenerator* particulas = nullptr;
     // Ya no hay vector interno de partículas: las usaremos globalmente
 

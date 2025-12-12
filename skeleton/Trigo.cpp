@@ -72,7 +72,7 @@ void Trigo::update(double t) {
 
             Vector4 colorInicial(0.0f, 1.0f, 0.0f, 1.0f);
             RenderItem* cubito = new RenderItem(shape, transform, colorInicial);
-            RegisterRenderItem(cubito);
+            
             tallos.push_back(cubito);
 
             cubosCreados++;
@@ -108,23 +108,50 @@ bool Trigo::estaMaduro() const {
     return madurando && progresoMaduracion >= 1.0f;
 }
 void Trigo::reset() {
-    // Liberar memoria actual
-    for (auto& item : tallos) {
-        if (item) {
-            DeregisterRenderItem(item); // si tu motor lo usa
-            delete item->transform;
+    
+        for (auto& item : tallos)
+        {
+            DeregisterRenderItem(item);
             delete item;
         }
-    }
-    tallos.clear();
+        tallos.clear();
 
-    if (particulas) {
-        delete particulas;
-        particulas = nullptr;
-    }
+        if (particulas)
+            particulas->setActive(false);
 
-    // Reiniciar el objeto a su estado inicial llamando de nuevo al constructor
-    *this = Trigo(posicionBase);
+        //*this = Trigo(posicionBase);
+
+        particulas = new ParticleGenerator(
+            posicionBase,
+            Vector3(0, 1.2f, 0),
+            0,
+            10.0,
+            2.5,
+            2,
+            Vector4(1.0f, 1.0f, 0.1f, 0.8f),
+            0.1f,
+            false,
+            0.0,
+            0.1,
+            0.1,
+            0.1,
+            0.5,
+            0.5, 0.0, 0.5,
+            true
+        );
+
+        particulas->setActive(false);
+
+        // 3. Restaurar estado interno
+        numCubosTotales = 8;
+        alturaCubo = 0.7f;
+        progresoCrecimiento = 0.0f;
+        cubosCreados = 0;
+        progresoMaduracion = 0.0f;
+        madurando = false;
+        regando = false;
+    
+
 }
 
 

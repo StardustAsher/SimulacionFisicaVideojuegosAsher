@@ -80,75 +80,75 @@ void initPhysics(bool interactive)
 	gScene = gPhysics->createScene(sceneDesc);
 
 
-	//Ejemplo muelle 1
+	////Ejemplo muelle 1
 
-	Vector3 anchorPos(0.0f, 5.0f, 0.0f);
+	//Vector3 anchorPos(0.0f, 5.0f, 0.0f);
 
-	// crear la partícula 
-	Particle* particleMuella = new Particle(Vector3(0.0f, 3.0f, 0.0f), Vector3(0, 0, 0), Vector3(0, 0, 0), 100.0, 1.0, 0.99, 1, Vector4(1, 0, 0, 1), 0.3);
+	//// crear la partícula 
+	//Particle* particleMuella = new Particle(Vector3(0.0f, 3.0f, 0.0f), Vector3(0, 0, 0), Vector3(0, 0, 0), 100.0, 1.0, 0.99, 1, Vector4(1, 0, 0, 1), 0.3);
 
-	p = particleMuella; // para la f
+	//p = particleMuella; // para la f
 
-	// ancla
-	physx::PxShape* anchorShape = gPhysics->createShape(physx::PxBoxGeometry(0.2f, 0.2f, 0.2f), *gMaterial);
-	physx::PxTransform* anchorTransform = new physx::PxTransform(anchorPos);
-	RenderItem* anchorItem = new RenderItem(anchorShape, anchorTransform, Vector4(0.2, 0.8, 0.2, 1.0));
-	RegisterRenderItem(anchorItem);
+	//// ancla
+	//physx::PxShape* anchorShape = gPhysics->createShape(physx::PxBoxGeometry(0.2f, 0.2f, 0.2f), *gMaterial);
+	//physx::PxTransform* anchorTransform = new physx::PxTransform(anchorPos);
+	//RenderItem* anchorItem = new RenderItem(anchorShape, anchorTransform, Vector4(0.2, 0.8, 0.2, 1.0));
+	//RegisterRenderItem(anchorItem);
 
-	// crear generador y registrarlo
-	AnchoredSpringForceGenerator* anchorSpring = new AnchoredSpringForceGenerator(anchorPos, 50.0 /*k*/, 2.0 /*rest len*/);
-	ejemploAnchoredSpring = anchorSpring;
-	forceRegistry.add(particleMuella, anchorSpring);
+	//// crear generador y registrarlo
+	//AnchoredSpringForceGenerator* anchorSpring = new AnchoredSpringForceGenerator(anchorPos, 50.0 /*k*/, 2.0 /*rest len*/);
+	//ejemploAnchoredSpring = anchorSpring;
+	//forceRegistry.add(particleMuella, anchorSpring);
 
-	// Añadir gravedad
-	forceRegistry.add(particleMuella, gravityEarth);
+	//// Añadir gravedad
+	//forceRegistry.add(particleMuella, gravityEarth);
 
-	proyectiles.push_back(particleMuella);
-
-
-	//Ejemplo muelle 2
-
-	// crear dos partículas
-	Particle* pA = new Particle(Vector3(-1.0, 10.0, 0.0), Vector3(0, 0, 0), Vector3(0, 0, 0), 100.0, 1.0, 0.99, 1, Vector4(0.0, 0.7, 1.0, 1.0), 0.25);
-	Particle* pB = new Particle(Vector3(1.0, 10.0, 0.0), Vector3(0, 0, 0), Vector3(0, 0, 0), 100.0, 1.0, 0.99, 1, Vector4(0.8, 0.4, 0.1, 1.0), 0.25);
-
-	SpringForceGenerator* springAB = new SpringForceGenerator(pB, 10.0 /*k*/, 2.0 /*rest*/);
-	SpringForceGenerator* springBA = new SpringForceGenerator(pA, 10.0, 2.0);
-
-	// Registrar ambas direcciones
-	forceRegistry.add(pA, springAB);
-	forceRegistry.add(pB, springBA);
+	//proyectiles.push_back(particleMuella);
 
 
-	//forceRegistry.add(pA, gravityEarth);
-	forceRegistry.add(pB, gravityEarth);
+	////Ejemplo muelle 2
 
-	proyectiles.push_back(pA);
-	proyectiles.push_back(pB);
+	//// crear dos partículas
+	//Particle* pA = new Particle(Vector3(-1.0, 10.0, 0.0), Vector3(0, 0, 0), Vector3(0, 0, 0), 100.0, 1.0, 0.99, 1, Vector4(0.0, 0.7, 1.0, 1.0), 0.25);
+	//Particle* pB = new Particle(Vector3(1.0, 10.0, 0.0), Vector3(0, 0, 0), Vector3(0, 0, 0), 100.0, 1.0, 0.99, 1, Vector4(0.8, 0.4, 0.1, 1.0), 0.25);
+
+	//SpringForceGenerator* springAB = new SpringForceGenerator(pB, 10.0 /*k*/, 2.0 /*rest*/);
+	//SpringForceGenerator* springBA = new SpringForceGenerator(pA, 10.0, 2.0);
+
+	//// Registrar ambas direcciones
+	//forceRegistry.add(pA, springAB);
+	//forceRegistry.add(pB, springBA);
+
+
+	////forceRegistry.add(pA, gravityEarth);
+	//forceRegistry.add(pB, gravityEarth);
+
+	//proyectiles.push_back(pA);
+	//proyectiles.push_back(pB);
 
 
 
 
 	//JUEGO
-	/*
-	// Crear 3 parcelas de tierra + plantas de trigo
+	
+	 //Crear 3 parcelas de tierra + plantas de trigo
 	for (int i = 0; i < 3; i++) {
 		float x = i * 10.0f - 10.0f;
 		float y = 0.0f;
 		float z = 0.0f;
 
-		// Tierra
+		 //Tierra
 		PxShape* tierraShape = gPhysics->createShape(PxBoxGeometry(4.0f, 0.5f, 4.0f), *gMaterial);
 		PxTransform* tierraTransform = new PxTransform(PxVec3(x, y, z));
 		RenderItem* tierraItem = new RenderItem(tierraShape, tierraTransform, Vector4(0.4f, 0.25f, 0.1f, 1.0f));
 		RegisterRenderItem(tierraItem);
 
-		// Planta de trigo
+		 //Planta de trigo
 		Trigo* planta = new Trigo(Vector3(x, y + 0.5f, z));
 		cultivos.push_back(planta);
 	}
 
-	// Crear irrigadores (emisores de agua)
+	 //Crear irrigadores (emisores de agua)
 	std::vector<Vector3> posicionesBoquillas;
 	for (int i = 0; i < 3; i++) {
 		float x = i * 10.0f - 10.0f;
@@ -175,7 +175,7 @@ void initPhysics(bool interactive)
 		emisores.push_back(irrigador);
 		tiempoRestanteEmisor.push_back(0.0);
 	}
-	*/
+	
 }
 
 // ============================================================
@@ -325,7 +325,7 @@ void keyPress(unsigned char key, const PxTransform& camera)
 		}
 		break;
 	}
-	case 'E':
+	case 'R':
 	{
 		for (auto& trigo : cultivos) {
 			if (trigo->estaMaduro()) {

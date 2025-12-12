@@ -18,8 +18,23 @@
 #include "AnchoredSpringForceGenerator.h"
 #include "SpringForceGenerator.h"
 #include "TimeForceGenerator.h"
+#include "Render/Camera.h"
 
-int trigoDisponible = 10;
+
+
+
+Camera* camera = GetCamera();
+
+bool mirandoTrigo = true;
+
+Vector3 camTrigoPos(-10.0f, 8.0f, 20.0f);
+Vector3 camTrigoDir(10.0f, -5.0f, -20.0f);  // apunta al trigal
+
+Vector3 camOvejasPos(20.0f, 10.0f, 20.0f);
+Vector3 camOvejasDir(-20.0f, -10.0f, -20.0f);  // apunta al corral
+
+
+int trigoDisponible = 0;
 std::string display_text = "Trigo disponible: " + std::to_string(trigoDisponible);
 Particle* p = NULL;
 
@@ -78,6 +93,10 @@ void initPhysics(bool interactive)
 	sceneDesc.filterShader = contactReportFilterShader;
 	sceneDesc.simulationEventCallback = &gContactReportCallback;
 	gScene = gPhysics->createScene(sceneDesc);
+
+	
+
+
 
 
 	////Ejemplo muelle 1
@@ -175,6 +194,31 @@ void initPhysics(bool interactive)
 		emisores.push_back(irrigador);
 		tiempoRestanteEmisor.push_back(0.0);
 	}
+
+	// --- Crear un corral simple ---
+	for (int i = 0; i < 4; i++) {
+		float x = 20.0f + (i % 2) * 6.0f;
+		float y = 0.5f;
+		float z = 5.0f + (i / 2) * 8.0f;
+
+		PxShape* vallaShape = gPhysics->createShape(PxBoxGeometry(3.0f, 1.0f, 0.2f), *gMaterial);
+		PxTransform* vallaTransform = new PxTransform(PxVec3(x, y, z));
+		RenderItem* vallaItem = new RenderItem(vallaShape, vallaTransform, Vector4(0.5, 0.3, 0.1, 1));
+		RegisterRenderItem(vallaItem);
+	}
+
+	// --- Ovejas (3 esferas blancas por ejemplo) ---
+	for (int i = 0; i < 3; i++) {
+		float x = 20.0f + (rand() % 5 - 2);
+		float y = 1.0f;
+		float z = 5.0f + (rand() % 5 - 2);
+
+		PxShape* sheep = gPhysics->createShape(PxSphereGeometry(0.8f), *gMaterial);
+		PxTransform* ts = new PxTransform(PxVec3(x, y, z));
+		RenderItem* r = new RenderItem(sheep, ts, Vector4(1, 1, 1, 1));
+		RegisterRenderItem(r);
+	}
+
 	
 }
 
@@ -305,6 +349,9 @@ void onCollision(physx::PxActor* actor1, physx::PxActor* actor2)
 // ============================================================
 // Teclas
 // ============================================================
+// elimina la duplicación bool mirandoTrigo = true; deja sólo una declaración global
+// bool mirandoTrigo = true;  // declarar una vez
+
 void keyPress(unsigned char key, const PxTransform& camera)
 {
 	Vector3 pos = camera.p;
@@ -323,8 +370,9 @@ void keyPress(unsigned char key, const PxTransform& camera)
 			tiempoRestanteEmisor[index] = 2.0;
 			cultivos[index]->regar();
 		}
-		break;
 	}
+	break;
+
 	case 'R':
 	{
 		for (auto& trigo : cultivos) {
@@ -335,9 +383,10 @@ void keyPress(unsigned char key, const PxTransform& camera)
 			}
 		}
 		display_text = "Trigo disponible: " + std::to_string(trigoDisponible);
-		break;
 	}
-	case 'T': // Disparar trigo 
+	break;
+
+	case 'T':
 	{
 		if (trigoDisponible > 0) {
 			trigoDisponible--;
@@ -347,39 +396,35 @@ void keyPress(unsigned char key, const PxTransform& camera)
 			dispararProyectil(pos, dir, masa, vel, velAjustada, 5, Vector4(1.0, 1.0, 0.1, 1.0));
 		}
 		display_text = "Trigo disponible: " + std::to_string(trigoDisponible);
-		break;
 	}
-	case 'Z': // Activar/desactivar gravedad
-	{
+	break;
+
+	case 'Z':
 		gravedadActiva = !gravedadActiva;
 		std::cout << (gravedadActiva ? "Gravedad activada" : "Gravedad desactivada") << std::endl;
 		break;
-	}
-	case 'X': // Activar/desactivar viento
-	{
+
+	case 'X':
 		vientoActivo = !vientoActivo;
 		std::cout << (vientoActivo ? "Viento activado" : "Viento desactivado") << std::endl;
 		break;
-	}
-	case '+':
-	{
-		if (ejemploSpring) {
-			double k = ejemploSpring->getK();
-			k *= 1.2;
-			ejemploSpring->setK(k);
-			std::cout << "k aumentado a " << k << std::endl;
-		}
-		if (ejemploAnchoredSpring) {
-			double k = ejemploAnchoredSpring->getK();
-			k *= 1.2;
-			ejemploAnchoredSpring->setK(k);
-			std::cout << "k aumentado a " << k << std::endl;
-		}
 
+	case '+':
+		if (ejemploSpring) {
+			double k = ejemploSpring->getK();
+			k *= 1.2;
+			ejemploSpring->setK(k);
+			std::cout << "k aumentado a " << k << std::endl;
+		}
+		if (ejemploAnchoredSpring) {
+			double k = ejemploAnchoredSpring->getK();
+			k *= 1.2;
+			ejemploAnchoredSpring->setK(k);
+			std::cout << "k aumentado a " << k << std::endl;
+		}
 		break;
-	}
+
 	case '-':
-	{
 		if (ejemploSpring) {
 			double k = ejemploSpring->getK();
 			k /= 1.2;
@@ -393,21 +438,46 @@ void keyPress(unsigned char key, const PxTransform& camera)
 			std::cout << "k reducido a " << k << std::endl;
 		}
 		break;
-	}
-	case 'F': // aplicar fuerza breve hacia +X
+
+	case 'F':
 	{
-		// fuerza constante de 200N durante 0.15s aplicada a la partículaMuella
 		Vector3 demoForce(500.0, 0.0, 0.0);
 		TimedForceGenerator* tfg = new TimedForceGenerator(demoForce, 0.15);
-		
-		forceRegistry.add(p, tfg); 
+		forceRegistry.add(p, tfg);
 		std::cout << "Fuerza temporal aplicada" << std::endl;
-		break;
 	}
+	break;
+
+	case 'C':
+	{
+		Camera* camera = GetCamera();
+		if (mirandoTrigo)
+		{
+			Vector3 dirNorm = camOvejasDir;
+			dirNorm.normalize(); // Normaliza el Vector3
+			camera->setEye(PxVec3(camOvejasPos.x, camOvejasPos.y, camOvejasPos.z));
+			camera->setDir(PxVec3(dirNorm.x, dirNorm.y, dirNorm.z));
+		}
+		else
+		{
+			Vector3 dirNorm = camTrigoDir;
+			dirNorm.normalize();
+			camera->setEye(PxVec3(camTrigoPos.x, camTrigoPos.y, camTrigoPos.z));
+			camera->setDir(PxVec3(dirNorm.x, dirNorm.y, dirNorm.z));
+		}
+		mirandoTrigo = !mirandoTrigo;
+
+	}
+	break;
+
+
+
+
 	default:
 		break;
-	}
+	} // fin switch
 }
+
 
 void keyRelease(unsigned char key, const PxTransform& camera)
 {

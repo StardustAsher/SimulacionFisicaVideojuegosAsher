@@ -2,6 +2,9 @@
 #include <PxPhysicsAPI.h>
 #include <vector>
 #include "Vector3D.h"
+#include "RigidForceRegistry.h"
+
+
 
 using namespace physx;
 

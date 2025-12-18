@@ -22,6 +22,9 @@
 #include "FloatForceGenerator.h"
 #include "SolidSystem.h"
 #include "RigidBodyGenerator.h"
+#include "RigidForceRegistry.h"
+#include "RigidWindForceGenerator.h"
+
 
 SolidSystem solidSystem;	
 
@@ -49,8 +52,8 @@ AnchoredSpringForceGenerator* ejemploAnchoredSpring = nullptr;
 Particle* floatingBox = nullptr;         // Cubo flotante
 FloatForceGenerator* flotacion = nullptr; // Generador de flotación
 
-
-
+ParticleForceRegistry forceRegistry;
+RigidForceRegistry rigidForceRegistry;
 
 
 using namespace physx;
@@ -66,7 +69,7 @@ PxDefaultCpuDispatcher* gDispatcher = NULL;
 PxScene* gScene = NULL;
 ContactReportCallback gContactReportCallback;
 
-ParticleForceRegistry forceRegistry;
+
 extern GravityForceGenerator* gravityEarth = new GravityForceGenerator(Vector3(0.0f, -9.8f, 0.0f));
 extern GravityForceGenerator* gravityMoon = new GravityForceGenerator(Vector3(0.0f, -1.6f, 0.0f));
 extern WindForceGenerator* vientoSuave = new WindForceGenerator(
@@ -74,13 +77,16 @@ extern WindForceGenerator* vientoSuave = new WindForceGenerator(
 	5.0
 );
 
+extern RigidWindForceGenerator* vientoRigido = new RigidWindForceGenerator(Vector3D(1.0, 0.0, 0.0), 100.0);
+
+
 std::vector<Particle*> proyectiles;
 std::vector<PxRigidDynamic*> rigidBodies;
 
 // Variables globales para control de fuerzas
 bool gravedadActiva = true;
 bool vientoActivo = false;
-
+bool vientoActivoRigid = true;
 // ============================================================
 // Inicialización del motor de física
 // ============================================================
@@ -201,6 +207,9 @@ void initPhysics(bool interactive)
 
 
 	//GENERADOR DE CUBOS RIGIDOS
+
+	
+
 
 	// Crear un generador de cubos
 	RigidBodyGenerator* generadorCubos = new RigidBodyGenerator(
@@ -343,6 +352,11 @@ void stepPhysics(bool interactive, double t)
 				proyectiles.erase(proyectiles.begin() + i);
 			}
 		}
+	}
+
+
+	if (vientoActivoRigid) {
+		rigidForceRegistry.updateForces(t);
 	}
 
 

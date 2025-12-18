@@ -267,6 +267,7 @@
     <ClCompile Include="Render\Camera.cpp" />
     <ClCompile Include="Render\Render.cpp" />
     <ClCompile Include="RigidBodyGenerator.cpp" />
+    <ClCompile Include="RigidForceGenerator.cpp" />
     <ClCompile Include="SpringForceGenerator.cpp" />
     <ClCompile Include="Trigo.cpp" />
     <ClCompile Include="Vector3D.cpp" />
@@ -287,6 +288,9 @@
     <ClInclude Include="Render\Camera.h" />
     <ClInclude Include="Render\Render.h" />
     <ClInclude Include="RigidBodyGenerator.h" />
+    <ClInclude Include="RigidForceGenerator.h" />
+    <ClInclude Include="RigidForceRegistry.h" />
+    <ClInclude Include="RigidWindForceGenerator.h" />
     <ClInclude Include="SolidSystem.h" />
     <ClInclude Include="SpringForceGenerator.h" />
     <ClInclude Include="TimeForceGenerator.h" />

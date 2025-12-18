@@ -1,6 +1,10 @@
 #include "RigidBodyGenerator.h"
 #include "RenderUtils.hpp"
+#include "RigidForceRegistry.h"
+#include "RigidWindForceGenerator.h"
 
+extern RigidForceRegistry rigidForceRegistry;
+extern RigidWindForceGenerator* vientoRigido;
 
 RigidBodyGenerator::RigidBodyGenerator(
     PxPhysics* physics,
@@ -59,6 +63,8 @@ void RigidBodyGenerator::emit(std::vector<PxRigidDynamic*>& outBodies) {
 
     scene->addActor(*body);
     outBodies.push_back(body);
+    rigidForceRegistry.add(body, vientoRigido);
+
 
     // Render
     RenderItem* r = new RenderItem(

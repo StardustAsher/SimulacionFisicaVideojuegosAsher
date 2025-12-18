@@ -8,7 +8,7 @@ public:
 	~Particle();
 
 	void integrate(double t);
-	bool isAlive() { return lifeTime > 0.0; }
+	bool isAlive() { return eternal || lifeTime > 0.0; }
 
 	 void AddForce(const Vector3& force) {
         accumulatedForce += force;
@@ -38,6 +38,8 @@ public:
 	}
 
 	void setSize(double size) { particleSize = size; }
+	void setEternal(bool val) { eternal = val; }
+
 
 private:
 	Vector3 velocity;
@@ -52,5 +54,6 @@ private:
 	bool firstIntegrate = true;
 	double particleSize;
 	Vector3 accumulatedForce;
+	bool eternal = false; 
 };
 

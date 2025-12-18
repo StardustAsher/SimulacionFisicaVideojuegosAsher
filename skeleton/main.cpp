@@ -31,8 +31,16 @@
 	{
 		PxRigidDynamic* trigo;
 	};
-	std::vector<ColisionTrigoOveja> colisionesPendientes;
 
+	struct CuboConMuelles {
+		Particle* cubo;                // Partícula principal (cubo)
+		std::vector<Particle*> muelles; // Partículas coloreadas unidas al cubo
+		std::vector<SpringForceGenerator*> springs; // Muelles
+	};
+
+	std::vector<CuboConMuelles> cubosEsquinas;
+
+	std::vector<ColisionTrigoOveja> colisionesPendientes;
 	std::vector<ColisionTrigoOveja> paraEliminar;
 
 	SolidSystem solidSystem;
@@ -40,6 +48,8 @@
 	Camera* camera = GetCamera();
 
 	bool mirandoTrigo = true;
+	bool decoracionCreada = false; 
+
 	int comidasOveja = 0;
 
 	Vector3 camTrigoPos(0.0f, 5.0f, -30.0f);
@@ -48,7 +58,10 @@
 	Vector3 camOvejasPos(0.0f, 5.0f, -30.0f);
 	Vector3 camOvejasDir(-90.0f, 0.0f, 1.0f);
 
-	int trigoDisponible = 10;
+	std::vector<Particle*> particulasDeco;               // Partículas colgantes
+	std::vector<AnchoredSpringForceGenerator*> muellesDeco; // Muelles de cada partícula
+
+	int trigoDisponible = 0;
 	std::string display_text = "Trigo disponible: " + std::to_string(trigoDisponible);
 	Particle* p = NULL;
 
@@ -217,12 +230,12 @@
 
 		PxMaterial* matCorral = gPhysics->createMaterial(0.5f, 0.5f, 0.6f);
 
-		float corralHalfSize = 12.0f;   // ahora bastante más grande
+		float corralHalfSize = 11.0f;   // ahora bastante más grande
 		float wallHeight = 2.0f;       // altura aumentada
 		float wallThickness = 0.3f;    // un poco más gruesas
 
 		// Posición central del corral, frente a la cámara de ovejas
-		Vector3 corralCenter(-20.0f, 2.0f, -30.0f);
+		Vector3 corralCenter(-25.0f, 2.0f, -30.0f);
 
 		// Color marrón claro
 		Vector4 colorPared(0.6f, 0.4f, 0.2f, 1.0f);
@@ -280,7 +293,7 @@
 
 		PxVec3 cabezaPos = oveja1->getCabeza()->getGlobalPose().p;
 		float separation = 0.4f;   // separación entre ojos
-		float offsetZ = 0.5f;      // delante de la cabeza
+		float offsetX = 0.5f;      // delante de la cabeza
 		float offsetY = 0.2f;      // altura relativa
 
 		// Partículas de ojos
@@ -293,9 +306,9 @@
 			0.99,
 			0,
 			Vector4(1.0, 1.0, 1.0, 1.0),
-			0.1
+			1.0
 		);
-
+		ojoIzq->setEternal(true);
 		Particle* ojoDer = new Particle(
 			Vector3(cabezaPos.x + offsetX, cabezaPos.y + offsetY, cabezaPos.z),
 			Vector3(0.0, 0.0, 0.0),
@@ -305,8 +318,9 @@
 			0.99,
 			0,
 			Vector4(1.0, 1.0, 1.0, 1.0),
-			0.1
+			1.0
 		);
+		ojoDer->setEternal(true);
 
 
 		// Anclas en la cabeza (partículas “inmóviles”)
@@ -319,8 +333,10 @@
 			0.0,
 			0,
 			Vector4(),
-			0.0
+			0.1
 		);
+
+		 anclaIzq->setEternal(true);
 
 		 anclaDer = new Particle(
 			Vector3(cabezaPos.x + separation, cabezaPos.y + offsetY, cabezaPos.z),
@@ -331,8 +347,10 @@
 			0.0,
 			0,
 			Vector4(),
-			0.0
+			0.1
 		);
+
+		 anclaDer->setEternal(true);
 
 		// Crear muelles
 		SpringForceGenerator* springIzq = new SpringForceGenerator(anclaIzq, 50.0, 0.0);
@@ -349,6 +367,77 @@
 		// Guardar las partículas globalmente para actualizar cada frame
 		proyectiles.push_back(ojoIzq);
 		proyectiles.push_back(ojoDer);
+
+
+		//DECO
+// Parámetros de la cuadrícula
+		int gridSize = 3;
+		float spacing = 8.0f;       // separación entre anclas
+		float anchorHeight = 10.0f; // altura de las anclas
+		Vector3 startPos = corralCenter; // centro de la cuadrícula
+
+		// Colores más variados para las bolas
+		Vector4 colorPairs[2][9] = {
+			{Vector4(1, 0, 0, 1), Vector4(1, 0.5, 0, 1), Vector4(1, 1, 0, 1),
+			 Vector4(0, 1, 0, 1), Vector4(0, 1, 0.5, 1), Vector4(0, 1, 1, 1),
+			 Vector4(0, 0, 1, 1), Vector4(0.5, 0, 1, 1), Vector4(1, 0, 1, 1)}, // bola 1
+
+			{Vector4(0, 1, 1, 1), Vector4(0, 0, 1, 1), Vector4(0.5, 0, 1, 1),
+			 Vector4(1, 0, 1, 1), Vector4(1, 0, 0, 1), Vector4(1, 0.5, 0, 1),
+			 Vector4(1, 1, 0, 1), Vector4(0, 1, 0.5, 1), Vector4(0, 1, 0, 1)}  // bola 2
+		};
+
+		int index = 0; // para asignar colores a cada ancla
+
+		for (int i = 0; i < gridSize; ++i) {
+			for (int j = 0; j < gridSize; ++j) {
+				// Posición del ancla
+				Vector3 anchorPos(
+					startPos.x + (i - 1) * spacing,
+					anchorHeight,
+					startPos.z + (j - 1) * spacing
+				);
+
+				// Crear forma del ancla
+				physx::PxShape* anchorShape = gPhysics->createShape(
+					physx::PxBoxGeometry(0.2f, 0.2f, 0.2f), *gMaterial
+				);
+				physx::PxTransform* anchorTransform = new physx::PxTransform(anchorPos);
+				RenderItem* anchorItem = new RenderItem(anchorShape, anchorTransform, Vector4(0.2, 0.8, 0.2, 1.0));
+				RegisterRenderItem(anchorItem);
+
+				// Crear 2 bolas por ancla con colores vibrantes
+				for (int b = 0; b < 2; ++b) {
+					Vector3 particlePos = anchorPos + Vector3(0.0f, -1.0f - b * 0.5f, 0.0f);
+
+					Particle* particleMuella = new Particle(
+						particlePos,
+						Vector3(0, 0, 0),
+						Vector3(0, 0, 0),
+						300.0f,
+						1.0f,
+						0.92f,
+						1,
+						colorPairs[b][index], // color más variado
+						0.3f
+					);
+
+					// Crear resorte
+					AnchoredSpringForceGenerator* anchorSpring = new AnchoredSpringForceGenerator(
+						anchorPos,
+						15.0f,
+						1.5f + b * 0.5f
+					);
+					forceRegistry.add(particleMuella, anchorSpring);
+					forceRegistry.add(particleMuella, gravityEarth);
+
+					proyectiles.push_back(particleMuella);
+				}
+
+				index++; // siguiente par de colores
+			}
+		}
+
 
 
 
@@ -417,7 +506,9 @@
 			rigidForceRegistry.add(oveja1->getCuerpo(), vientoArriba);
 			vientoArribaAplicado = true;
 			display_text = "La oveja astronauta ha iniciado su misión. ¡¡¡Enhorabuena!!!";
+			
 		}
+		
 
 
 		// Solo aplica fuerzas activas
@@ -443,6 +534,10 @@
 		anclaIzq->setPosition(Vector3(cabezaPosActual.x - offsetX, cabezaPosActual.y + offsetY, cabezaPosActual.z));
 		anclaDer->setPosition(Vector3(cabezaPosActual.x + offsetX, cabezaPosActual.y + offsetY, cabezaPosActual.z));
 
+
+		for (auto& pr : particulasDeco) {
+			pr->integrate(t);
+		}
 
 
 		if (vientoActivoRigid) {
@@ -503,6 +598,8 @@
 		}
 
 
+
+
 		// limpiar cola
 		colisionesPendientes.clear();
 
@@ -547,6 +644,13 @@
 			if (transport) transport->release();
 		}
 		if (gFoundation) gFoundation->release();
+
+		for (auto& p : particulasDeco) delete p;
+		particulasDeco.clear();
+
+		for (auto& m : muellesDeco) delete m;
+		muellesDeco.clear();
+
 
 		display_text.clear();
 	}

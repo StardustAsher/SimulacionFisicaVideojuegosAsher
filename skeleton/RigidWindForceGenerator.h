@@ -29,19 +29,10 @@ public:
         Vector3D vel(v.x, v.y, v.z);
 
         // Velocidad del viento (constante)
-        Vector3D windVel(
-            direction.x * strength,
-            direction.y * strength,
-            direction.z * strength
-        );
+        Vector3D windVel = direction * strength;
 
         // Diferencia viento - velocidad del cuerpo
-        Vector3D diff(
-            windVel.x - vel.x,
-            windVel.y - vel.y,
-            windVel.z - vel.z
-        );
-
+        Vector3D diff = windVel - vel;
         double module = diff.magnitude();
         if (module < 0.01) return;
 
@@ -52,14 +43,14 @@ public:
             k1 * diff.z + k2 * module * diff.z
         );
 
-        // Aplicar fuerza al sólido rígido
+        // Aplicar fuerza como ACCELERACIÓN
         body->addForce(
             physx::PxVec3(
                 (float)windForce.x,
                 (float)windForce.y,
                 (float)windForce.z
             ),
-            physx::PxForceMode::eFORCE
+            physx::PxForceMode::eACCELERATION
         );
     }
 };

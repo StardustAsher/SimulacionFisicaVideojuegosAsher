@@ -19,20 +19,20 @@
 #include "SpringForceGenerator.h"
 #include "TimeForceGenerator.h"
 #include "Render/Camera.h"
+#include "FloatForceGenerator.h"
+#include "SolidSystem.h"
 
-
-
+SolidSystem solidSystem;	
 
 Camera* camera = GetCamera();
 
 bool mirandoTrigo = true;
 
-Vector3 camTrigoPos(-10.0f, 8.0f, 20.0f);
-Vector3 camTrigoDir(10.0f, -5.0f, -20.0f);  // apunta al trigal
+Vector3 camTrigoPos(0.0f, 5.0f, -20.0f);
+Vector3 camTrigoDir(0.0f, 0.0f, 1.0f);
 
-Vector3 camOvejasPos(20.0f, 10.0f, 20.0f);
-Vector3 camOvejasDir(-20.0f, -10.0f, -20.0f);  // apunta al corral
-
+Vector3 camOvejasPos(30.0f, 8.0f, 30.0f);
+Vector3 camOvejasDir(-10.0f, -2.0f, -15.0f);
 
 int trigoDisponible = 0;
 std::string display_text = "Trigo disponible: " + std::to_string(trigoDisponible);
@@ -44,6 +44,12 @@ std::vector<RenderItem*> plantas;
 std::vector<Trigo*> cultivos; // Vector de plantas de trigo
 SpringForceGenerator* ejemploSpring = nullptr;
 AnchoredSpringForceGenerator* ejemploAnchoredSpring = nullptr;
+Particle* floatingBox = nullptr;         // Cubo flotante
+FloatForceGenerator* flotacion = nullptr; // Generador de flotación
+
+
+
+
 
 using namespace physx;
 
@@ -96,6 +102,26 @@ void initPhysics(bool interactive)
 
 	
 
+	// ===== SUELO =====
+	PxRigidStatic* suelo = gPhysics->createRigidStatic(
+		PxTransform(PxVec3(0.0f, -0.5f, 0.0f))
+	);
+
+	PxShape* sueloShape = gPhysics->createShape(
+		PxBoxGeometry(50.0f, 0.5f, 50.0f),
+		*gMaterial
+	);
+
+	suelo->attachShape(*sueloShape);
+	gScene->addActor(*suelo);
+
+	// Render
+	RenderItem* sueloItem = new RenderItem(
+		sueloShape,
+		suelo->getGlobalPose(),
+		Vector4(0.3f, 0.8f, 0.3f, 1.0f)
+	);
+	RegisterRenderItem(sueloItem);
 
 
 
@@ -145,79 +171,105 @@ void initPhysics(bool interactive)
 	//proyectiles.push_back(pA);
 	//proyectiles.push_back(pB);
 
+	////FLOTACION
 
+	//floatingBox = new Particle(
+	//	Vector3(0.0f, 2.0f, 0.0f),
+	//	Vector3(0.0f, 0.0f, 0.0f),
+	//	Vector3(0.0f, 0.0f, 0.0f),
+	//	1000.0,
+	//	1.0,
+	//	0.99,
+	//	2,
+	//	Vector4(1.0, 0.5, 0.2, 1.0),
+	//	0.5
+	//);
+
+	//proyectiles.push_back(floatingBox);
+
+	//// Flotación
+	//flotacion = new FloatForceGenerator(
+	//	1.0f,        // altura
+	//	0.125f,      // volumen
+	//	1000.0f,     // densidad agua
+	//	floatingBox
+	//);
+
+	//forceRegistry.add(floatingBox, flotacion);
+	//forceRegistry.add(floatingBox, gravityEarth);
 
 
 	//JUEGO
 	
-	 //Crear 3 parcelas de tierra + plantas de trigo
-	for (int i = 0; i < 3; i++) {
-		float x = i * 10.0f - 10.0f;
-		float y = 0.0f;
-		float z = 0.0f;
+	// //Crear 3 parcelas de tierra + plantas de trigo
+	//for (int i = 0; i < 3; i++) {
+	//	float x = i * 10.0f - 10.0f;
+	//	float y = 0.0f;
+	//	float z = 0.0f;
 
-		 //Tierra
-		PxShape* tierraShape = gPhysics->createShape(PxBoxGeometry(4.0f, 0.5f, 4.0f), *gMaterial);
-		PxTransform* tierraTransform = new PxTransform(PxVec3(x, y, z));
-		RenderItem* tierraItem = new RenderItem(tierraShape, tierraTransform, Vector4(0.4f, 0.25f, 0.1f, 1.0f));
-		RegisterRenderItem(tierraItem);
+	//	 //Tierra
+	//	PxShape* tierraShape = gPhysics->createShape(PxBoxGeometry(4.0f, 0.5f, 4.0f), *gMaterial);
+	//	PxTransform* tierraTransform = new PxTransform(PxVec3(x, y, z));
+	//	RenderItem* tierraItem = new RenderItem(tierraShape, tierraTransform, Vector4(0.4f, 0.25f, 0.1f, 1.0f));
+	//	RegisterRenderItem(tierraItem);
 
-		 //Planta de trigo
-		Trigo* planta = new Trigo(Vector3(x, y + 0.5f, z));
-		cultivos.push_back(planta);
-	}
+	//	 //Planta de trigo
+	//	Trigo* planta = new Trigo(Vector3(x, y + 0.5f, z));
+	//	cultivos.push_back(planta);
+	//}
 
-	 //Crear irrigadores (emisores de agua)
-	std::vector<Vector3> posicionesBoquillas;
-	for (int i = 0; i < 3; i++) {
-		float x = i * 10.0f - 10.0f;
-		float y = 10.0f;
-		float z = 0.0f;
+	// //Crear irrigadores (emisores de agua)
+	//std::vector<Vector3> posicionesBoquillas;
+	//for (int i = 0; i < 3; i++) {
+	//	float x = i * 10.0f - 10.0f;
+	//	float y = 10.0f;
+	//	float z = 0.0f;
 
-		PxShape* boquillaShape = gPhysics->createShape(PxBoxGeometry(1.0f, 1.0f, 1.0f), *gMaterial);
-		PxTransform* boquillaTransform = new PxTransform(PxVec3(x, y, z));
-		RenderItem* boquillaItem = new RenderItem(boquillaShape, boquillaTransform, Vector4(0.2f, 0.2f, 0.8f, 1.0f));
-		RegisterRenderItem(boquillaItem);
+	//	PxShape* boquillaShape = gPhysics->createShape(PxBoxGeometry(1.0f, 1.0f, 1.0f), *gMaterial);
+	//	PxTransform* boquillaTransform = new PxTransform(PxVec3(x, y, z));
+	//	RenderItem* boquillaItem = new RenderItem(boquillaShape, boquillaTransform, Vector4(0.2f, 0.2f, 0.8f, 1.0f));
+	//	RegisterRenderItem(boquillaItem);
 
-		posicionesBoquillas.push_back(Vector3(x, y, z));
-	}
+	//	posicionesBoquillas.push_back(Vector3(x, y, z));
+	//}
 
-	for (int i = 0; i < 3; i++) {
-		ParticleGenerator* irrigador = new ParticleGenerator(
-			posicionesBoquillas[i],
-			Vector3(0, -10, 0),
-			1, 50, 0.5, 2,
-			Vector4(0.1, 0.3, 1.0, 1.0),
-			0.2, false, 0.0, 0.1, 0.3, 0.1, 0.1, 2.0, 0.0, 2.0
-		);
-		irrigador->setActive(false);
-		emisores.push_back(irrigador);
-		tiempoRestanteEmisor.push_back(0.0);
-	}
+	//for (int i = 0; i < 3; i++) {
+	//	ParticleGenerator* irrigador = new ParticleGenerator(
+	//		posicionesBoquillas[i],
+	//		Vector3(0, -10, 0),
+	//		1, 50, 0.5, 2,
+	//		Vector4(0.1, 0.3, 1.0, 1.0),
+	//		0.2, false, 0.0, 0.1, 0.3, 0.1, 0.1, 2.0, 0.0, 2.0
+	//	);
+	//	irrigador->setActive(false);
+	//	emisores.push_back(irrigador);
+	//	tiempoRestanteEmisor.push_back(0.0);
+	//}
 
-	// --- Crear un corral simple ---
-	for (int i = 0; i < 4; i++) {
-		float x = 20.0f + (i % 2) * 6.0f;
-		float y = 0.5f;
-		float z = 5.0f + (i / 2) * 8.0f;
+	//// --- Crear un corral simple ---
+	//for (int i = 0; i < 4; i++) {
+	//	float x = 25.0f + (i % 2) * 6.0f;
+	//	float z = 15.0f + (i / 2) * 8.0f;
+	//	float y = 1.0f;
+	//	// Vallas
 
-		PxShape* vallaShape = gPhysics->createShape(PxBoxGeometry(3.0f, 1.0f, 0.2f), *gMaterial);
-		PxTransform* vallaTransform = new PxTransform(PxVec3(x, y, z));
-		RenderItem* vallaItem = new RenderItem(vallaShape, vallaTransform, Vector4(0.5, 0.3, 0.1, 1));
-		RegisterRenderItem(vallaItem);
-	}
+	//	PxShape* vallaShape = gPhysics->createShape(PxBoxGeometry(3.0f, 1.0f, 0.2f), *gMaterial);
+	//	PxTransform* vallaTransform = new PxTransform(PxVec3(x, y, z));
+	//	RenderItem* vallaItem = new RenderItem(vallaShape, vallaTransform, Vector4(0.5, 0.3, 0.1, 1));
+	//	RegisterRenderItem(vallaItem);
+	//}
 
-	// --- Ovejas (3 esferas blancas por ejemplo) ---
-	for (int i = 0; i < 3; i++) {
-		float x = 20.0f + (rand() % 5 - 2);
-		float y = 1.0f;
-		float z = 5.0f + (rand() % 5 - 2);
+	//// --- Ovejas (3 esferas blancas por ejemplo) ---
+	//for (int i = 0; i < 3; i++) {
+	//	float x = 20.0f + (rand() % 5 - 2);
+	//	float y = 1.0f;
+	//	float z = 5.0f + (rand() % 5 - 2);
 
-		PxShape* sheep = gPhysics->createShape(PxSphereGeometry(0.8f), *gMaterial);
-		PxTransform* ts = new PxTransform(PxVec3(x, y, z));
-		RenderItem* r = new RenderItem(sheep, ts, Vector4(1, 1, 1, 1));
-		RegisterRenderItem(r);
-	}
+	//	PxShape* sheep = gPhysics->createShape(PxSphereGeometry(0.8f), *gMaterial);
+	//	PxTransform* ts = new PxTransform(PxVec3(x, y, z));
+	//	RenderItem* r = new RenderItem(sheep, ts, Vector4(1, 1, 1, 1));
+	//	RegisterRenderItem(r);
+	//}
 
 	
 }
@@ -274,6 +326,7 @@ void stepPhysics(bool interactive, double t)
 			}
 		}
 	}
+
 
 	// Actualizar emisores
 	for (int i = 0; i < emisores.size(); i++) {
@@ -469,6 +522,24 @@ void keyPress(unsigned char key, const PxTransform& camera)
 
 	}
 	break;
+	case 'M': // aumentar masa
+	{
+		double m = floatingBox->getMass();
+		floatingBox->setMass(m * 1.2);
+		std::cout << "Masa: " << floatingBox->getMass() << std::endl;
+	}
+	break;
+
+	case 'N': // reducir masa
+	{
+		double m = floatingBox->getMass();
+		floatingBox->setMass(m / 1.2);
+	}
+	break;
+
+	
+
+
 
 
 

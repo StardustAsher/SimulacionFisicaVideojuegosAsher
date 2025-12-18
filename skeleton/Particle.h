@@ -24,6 +24,14 @@ public:
 		return position.p; 
 	}
 	Vector3 getVelocity() const { return velocity; }
+
+	void setMass(double m) {
+		if (m <= 0.0)
+			mass = 0.0;
+		else
+			mass = m;
+	}
+
 	
 
 private:

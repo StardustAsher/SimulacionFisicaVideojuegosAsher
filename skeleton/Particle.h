@@ -32,7 +32,12 @@ public:
 			mass = m;
 	}
 
-	
+	void setPosition(const Vector3& pos) {
+		position.p = physx::PxVec3(pos.x, pos.y, pos.z);
+		prevPosition = pos;
+	}
+
+	void setSize(double size) { particleSize = size; }
 
 private:
 	Vector3 velocity;

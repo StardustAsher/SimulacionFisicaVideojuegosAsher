@@ -16,7 +16,7 @@ public:
         : RigidForceGenerator(GENERIC), strength(s)
     {
         direction = dir;
-        direction.normalize(); // normaliza IN PLACE
+        direction.normalize(); 
     }
 
     void updateForce(physx::PxRigidDynamic* body, double t) override
@@ -28,7 +28,7 @@ public:
         physx::PxVec3 v = body->getLinearVelocity();
         Vector3D vel(v.x, v.y, v.z);
 
-        // Velocidad del viento (constante)
+        // Velocidad del viento 
         Vector3D windVel = direction * strength;
 
         // Diferencia viento - velocidad del cuerpo

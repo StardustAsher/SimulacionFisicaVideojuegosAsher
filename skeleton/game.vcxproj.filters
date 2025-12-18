@@ -24,6 +24,7 @@
     <ClCompile Include="FloatForceGenerator.cpp" />
     <ClCompile Include="RigidBodyGenerator.cpp" />
     <ClCompile Include="RigidForceGenerator.cpp" />
+    <ClCompile Include="Oveja.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="core.hpp" />
@@ -53,6 +54,7 @@
     <ClInclude Include="RigidForceGenerator.h" />
     <ClInclude Include="RigidForceRegistry.h" />
     <ClInclude Include="RigidWindForceGenerator.h" />
+    <ClInclude Include="Oveja.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Render">

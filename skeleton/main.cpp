@@ -21,6 +21,7 @@
 #include "Render/Camera.h"
 #include "FloatForceGenerator.h"
 #include "SolidSystem.h"
+#include "RigidBodyGenerator.h"
 
 SolidSystem solidSystem;	
 
@@ -39,6 +40,7 @@ std::string display_text = "Trigo disponible: " + std::to_string(trigoDisponible
 Particle* p = NULL;
 
 std::vector<ParticleGenerator*> emisores;
+std::vector<RigidBodyGenerator*> emisoresRigid;
 std::vector<double> tiempoRestanteEmisor;
 std::vector<RenderItem*> plantas;
 std::vector<Trigo*> cultivos; // Vector de plantas de trigo
@@ -73,6 +75,7 @@ extern WindForceGenerator* vientoSuave = new WindForceGenerator(
 );
 
 std::vector<Particle*> proyectiles;
+std::vector<PxRigidDynamic*> rigidBodies;
 
 // Variables globales para control de fuerzas
 bool gravedadActiva = true;
@@ -116,11 +119,9 @@ void initPhysics(bool interactive)
 	gScene->addActor(*suelo);
 
 	// Render
-	RenderItem* sueloItem = new RenderItem(
-		sueloShape,
-		suelo->getGlobalPose(),
-		Vector4(0.3f, 0.8f, 0.3f, 1.0f)
-	);
+	RenderItem* sueloItem = new RenderItem(sueloShape, suelo, Vector4(0.3f, 0.8f, 0.3f, 1.0f));
+	RegisterRenderItem(sueloItem);
+
 	RegisterRenderItem(sueloItem);
 
 
@@ -199,6 +200,21 @@ void initPhysics(bool interactive)
 	//forceRegistry.add(floatingBox, gravityEarth);
 
 
+	//GENERADOR DE CUBOS RIGIDOS
+
+	// Crear un generador de cubos
+	RigidBodyGenerator* generadorCubos = new RigidBodyGenerator(
+		gPhysics,      // PhysX physics
+		gScene,        // PhysX scene
+		Vector3D(0, 10, 0), // posición inicial (10 unidades sobre el suelo)
+		Vector3D(0, 0, 0),  // velocidad inicial
+		2.0,           // 2 cubos por segundo
+		10.0,          // densidad
+		gMaterial      // material
+	);
+
+	emisoresRigid.push_back(generadorCubos);
+
 	//JUEGO
 	
 	// //Crear 3 parcelas de tierra + plantas de trigo
@@ -271,6 +287,8 @@ void initPhysics(bool interactive)
 	//	RegisterRenderItem(r);
 	//}
 
+
+
 	
 }
 
@@ -340,6 +358,10 @@ void stepPhysics(bool interactive, double t)
 		}
 	}
 
+	for(int i = 0; i < emisoresRigid.size(); i++) {
+		emisoresRigid[i]->update(t, rigidBodies);
+	}
+
 	// Actualizar trigo
 	for (auto& trigo : cultivos) {
 		trigo->update(t);
@@ -348,6 +370,10 @@ void stepPhysics(bool interactive, double t)
 			gen->update(t, proyectiles);
 		}
 	}
+
+	gScene->simulate(t);
+	gScene->fetchResults(true);
+
 
 	std::this_thread::sleep_for(std::chrono::microseconds(10));
 }

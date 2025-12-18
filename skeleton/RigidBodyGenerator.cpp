@@ -55,6 +55,8 @@ void RigidBodyGenerator::emit(std::vector<PxRigidDynamic*>& outBodies) {
         PxVec3(meanVelocity.x, meanVelocity.y, meanVelocity.z)
     );
 
+    body->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, false); // asegurarte que está activada
+
     scene->addActor(*body);
     outBodies.push_back(body);
 
@@ -64,5 +66,6 @@ void RigidBodyGenerator::emit(std::vector<PxRigidDynamic*>& outBodies) {
         body,
         Vector4(0.7f, 0.2f, 0.2f, 1.0f)
     );
+	
     RegisterRenderItem(r);
 }
